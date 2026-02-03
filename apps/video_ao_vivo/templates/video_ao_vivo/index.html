@@ -1,0 +1,190 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}Vídeo Ao Vivo | PigVision{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'video_ao_vivo/css/index.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="live-page">
+
+  <!-- HEADER -->
+  <div class="mb-3">
+    <h2 class="mb-0">Vídeo Ao Vivo</h2>
+    <p class="text-muted">Contagem em tempo real de animais</p>
+  </div>
+
+  <!-- GRID PRINCIPAL -->
+  <div class="live-grid">
+
+    <!-- VIDEO/COUNTER AREA -->
+    <section class="live-video card">
+      
+      <!-- SELEÇÃO DE CÂMERA -->
+      <div id="cameraSelection">
+        <h3>Selecione uma câmera</h3>
+
+        <!-- Filtro por Tipo de Animal -->
+        <div class="mb-2">
+          <label for="animalFilter" class="form-label">Tipo de Animal</label>
+          <select id="animalFilter" class="form-control">
+            <option value="">Todos</option>
+            {% for animal in animal_types %}
+            <option value="{{ animal }}">{{ animal }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <select id="cameraSelect" class="form-control">
+          <option value="">-- Escolha uma câmera --</option>
+          {% for camera in cameras %}
+          <option value="{{ camera.id }}" 
+                  data-url="{{ camera.stream_url|default:camera.rtsp_url }}" 
+                  data-detection-class="{{ camera.detection_class_name }}"
+                  data-stream-type="{{ camera.stream_type }}">
+            {{ camera.name }}
+          </option>
+          {% endfor %}
+        </select>
+        <button id="btnSelectCamera" class="btn btn-primary mt-3" disabled>Continuar</button>
+      </div>
+
+      <!-- CONFIGURAÇÃO DA LINHA -->
+      <div id="lineSetup" style="display:none;">
+        <div class="video-top">
+          <span class="badge" id="cameraName">Câmera</span>
+        </div>
+        
+        <div class="video-canvas" id="videoCanvas">
+          <video id="snapshotVideo" class="live-video-player" autoplay muted style="display:none;"></video>
+          <img id="snapshotImage" class="live-video-player" alt="Snapshot da câmera" />
+          <div id="lineOverlay" class="line-overlay">
+            <div id="countLine" class="count-line"></div>
+          </div>
+        </div>
+        
+        <p class="text-muted mt-2">Clique ou arraste para posicionar a linha de contagem</p>
+        <button id="btnStartCount" class="btn btn-primary mt-3">Iniciar Contagem</button>
+      </div>
+
+      <!-- CONTAGEM ATIVA -->
+      <div id="countingActive" style="display:none;">
+        <div class="video-top">
+          <span class="badge" id="cameraNameActive">Câmera</span>
+          <span class="badge success">CONTANDO</span>
+        </div>
+        
+        <!-- Vídeo para debug 
+        <div class="video-canvas mb-3" style="position: relative;">
+          <img id="liveStream" class="live-video-player" alt="Stream da câmera" style="width: 100%; height: auto; max-height: 400px; object-fit: contain;" />
+        </div>-->
+        
+        <div class="counter-display">
+          <div class="counter-item">
+            <span class="counter-label">ENTRADAS</span>
+            <span class="counter-value" id="countIn">0</span>
+          </div>
+          <div class="counter-item">
+            <span class="counter-label">SAÍDAS</span>
+            <span class="counter-value" id="countOut">0</span>
+          </div>
+          <div class="counter-item">
+            <span class="counter-label">SALDO</span>
+            <span class="counter-value" id="countBalance">0</span>
+          </div>
+        </div>
+
+        <div class="video-controls mt-4">
+          <button id="btn-pause" type="button">⏸ Pausar</button>
+          <button id="btn-stop" type="button">⏹ Parar</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- LOG -->
+    <aside class="live-log card">
+      <div class="log-header">
+        <div>
+          <h3>Log de Eventos</h3>
+          <p class="text-muted">Ao vivo</p>
+        </div>
+      </div>
+
+      <div class="log-list" id="logList">
+        <!-- Os eventos aparecerão aqui via JavaScript -->
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- MODAL DE INFORMAÇÕES DA CONTAGEM -->
+  <div class="modal fade" id="countingInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Informações da Contagem</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="countingInfoForm">
+            <!-- Tipo de Animal -->
+            <div class="mb-3">
+              <label for="animalType" class="form-label">Tipo de Animal <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="animalType" name="animal_type" placeholder="Ex: Porcos, Galinhas, Vacas" required>
+              <small class="text-muted">Será preenchido automaticamente baseado na câmera</small>
+            </div>
+
+            <!-- Lote -->
+            <div class="mb-3">
+              <label for="batchNumber" class="form-label">Lote</label>
+              <input type="text" class="form-control" id="batchNumber" name="batch_number" placeholder="Ex: LOTE-2026-001">
+            </div>
+
+            <!-- Destinatário -->
+            <div class="mb-3">
+              <label for="recipient" class="form-label">Destinatário/Empresa</label>
+              <input type="text" class="form-control" id="recipient" name="recipient" placeholder="Ex: Frigorífico XYZ">
+            </div>
+
+            <!-- Informações Adicionais -->
+            <div class="mb-3">
+              <label for="additionalNotes" class="form-label">Informações Adicionais</label>
+              <textarea class="form-control" id="additionalNotes" name="additional_notes" rows="3" placeholder="Observações ou informações extras"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmCounting">Confirmar e Parar Contagem</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.VIDEO_AO_VIVO_URLS = {
+    start:  "{% url 'video_ao_vivo:start' %}",
+    pause:  "{% url 'video_ao_vivo:pause' %}",
+    resume: "{% url 'video_ao_vivo:resume' %}",
+    stop:   "{% url 'video_ao_vivo:stop' %}",
+    status: "{% url 'video_ao_vivo:status' %}",
+    stream: "{% url 'video_ao_vivo:stream' %}",
+    meta:   "{% url 'video_ao_vivo:meta' %}",
+    line:   "{% url 'video_ao_vivo:line' %}",
+    events: "{% url 'video_ao_vivo:events' %}",
+    snapshot: "{% url 'video_ao_vivo:snapshot' %}",
+  };
+</script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="{% static 'video_ao_vivo/js/index_simple.js' %}"></script>
+<script>lucide.createIcons();</script>
+{% endblock %}

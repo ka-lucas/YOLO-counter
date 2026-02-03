@@ -1,0 +1,641 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}Configurações | PigVision{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/configuracao/configuracao.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <h2>Configurações</h2>
+  <p class="text-muted">Gerencie as configurações do sistema de contagem de animais</p>
+</div>
+
+<div class="config-grid">
+
+  <!-- MENU INTERNO -->
+  <div class="card config-menu">
+    <button class="config-tab active" data-tab="modelo">
+      <i data-lucide="cpu"></i>
+      Modelo IA
+    </button>
+
+    <button class="config-tab" data-tab="camera">
+      <i data-lucide="camera"></i>
+      Câmera
+    </button>
+
+    <!--<button class="config-tab" data-tab="move">
+      <i data-lucide="move"></i>
+      Linha Virtual
+    </button>-->
+
+    <!--<button class="config-tab">
+      <i data-lucide="palette"></i>
+      Tema
+    </button>-->
+
+    <button class="config-tab" data-tab="sistema">
+      <i data-lucide="settings"></i>
+      Sistema
+    </button>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div class="card config-content">
+
+    <!-- ================= MODELO IA ================= -->
+    <section class="config-section active" id="tab-modelo">
+
+      <h3>Configurações do Modelo</h3>
+      <p class="text-muted">Ajuste os parâmetros de detecção</p>
+
+      <!-- MODELO ATIVO -->
+      {% if active_model %}
+      <div class="model-box">
+        <span class="badge-type">{{ active_model.name }}.pt</span>
+        <span class="badge-id">Ativo</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confiança mínima</label>
+
+        <div class="range-wrapper">
+          <input type="range" min="0" max="100" value="{{ active_model.confidence_threshold|floatformat:0|default:85 }}"
+            id="confidenceRange">
+          <span class="range-value" id="confidenceValue">{{ active_model.confidence_threshold|floatformat:0|default:85
+            }}%</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-warning">
+        <i data-lucide="alert-triangle"></i>
+        Nenhum modelo ativo. Faça upload de um modelo .pt abaixo.
+      </div>
+      {% endif %}
+
+      <!-- UPLOAD BOX -->
+      <form method="post" action="{% url 'configuracao:upload_model' %}" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+
+        <div class="upload-box" id="uploadBox">
+          <input type="file" name="model_file" id="modelFileInput" accept=".pt" style="display: none;">
+          <p>Arraste um arquivo <strong>.pt</strong> ou clique para selecionar</p>
+          <small class="text-muted">O modelo será validado (máx. 500MB)</small>
+        </div>
+
+        <div id="fileInfo" style="display: none; margin-top: 1rem;">
+          <p><strong>Arquivo selecionado:</strong> <span id="fileName"></span></p>
+          <p><strong>Tamanho:</strong> <span id="fileSize"></span></p>
+          
+          <div class="form-group mt-3">
+            <label class="form-label">Nome do modelo</label>
+            <input type="text" name="name" id="modelName" class="form-control" placeholder="Ex: yolo11n" required>
+          </div>
+          
+          <input type="hidden" name="confidence_threshold" value="0.85">
+          <input type="hidden" name="is_active" value="false">
+          
+          <button type="submit" class="btn btn-primary mt-2">
+            <i data-lucide="upload"></i>
+            Fazer Upload
+          </button>
+          <button type="button" class="btn btn-secondary mt-2" onclick="cancelUpload()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+
+      <!-- BOTÃO SALVAR CONFIANÇA -->
+      {% if active_model %}
+      <button class="btn btn-primary mt-4" onclick="saveConfidence()">
+        Salvar confiança
+      </button>
+      {% endif %}
+
+      <!-- LISTA DE MODELOS ENVIADOS -->
+      <hr class="my-5">
+      
+      <h4>Meus Modelos</h4>
+      <p class="text-muted">Gerencie os modelos que você enviou</p>
+
+      {% if models %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Tamanho</th>
+              <th>Confiança</th>
+              <th>Visibilidade</th>
+              <th>Status</th>
+              <th>Enviado em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for model in models %}
+            <tr>
+              <td>
+                <strong>{{ model.name }}</strong>
+              </td>
+              <td>
+                {{ model.file_size }} MB
+              </td>
+              <td>
+                {{ model.confidence_threshold|floatformat:0 }}%
+              </td>
+              <td>
+                {% if model.is_public %}
+                <span class="badge bg-success">🌐 Público</span>
+                {% else %}
+                <span class="badge bg-warning">🔒 Privado</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if model.is_active %}
+                <span class="badge bg-success">✓ Ativo</span>
+                {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                {{ model.uploaded_at|date:"d/m/Y H:i" }}
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  {% if model.can_edit %}
+                  <a href="{% url 'configuracao:model_edit' model.pk %}" class="btn btn-outline-primary" title="Editar">
+                    <i data-lucide="edit"></i>
+                  </a>
+                  {% else %}
+                  <button class="btn btn-outline-primary" disabled title="Você não tem permissão para editar">
+                    <i data-lucide="edit"></i>
+                  </button>
+                  {% endif %}
+                  
+                  {% if model.can_delete %}
+                  <a href="{% url 'configuracao:model_delete' model.pk %}" class="btn btn-outline-danger" title="Deletar">
+                    <i data-lucide="trash-2"></i>
+                  </a>
+                  {% else %}
+                  <button class="btn btn-outline-danger" disabled title="{% if model.is_active %}Ative outro modelo primeiro{% else %}Você não tem permissão para deletar{% endif %}">
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        <i data-lucide="info"></i> Você ainda não enviou nenhum modelo.
+      </div>
+      {% endif %}
+
+    </section>
+
+    <!-- ================= CÂMERA ================= -->
+    <section class="config-section" id="tab-camera">
+
+      <div class="content-header">
+        <div class="content-title">
+          <div>
+            <h3>Minhas Câmeras</h3>
+            <p class="text-muted">Gerencie as câmeras do sistema</p>
+          </div>
+        </div>
+        <a href="{% url 'cameras:create' %}" class="btn btn-primary">
+          <i data-lucide="plus"></i>
+          Nova Câmera
+        </a>
+      </div>
+
+      <!-- LISTA DE CÂMERAS -->
+      {% if cameras %}
+      <div class="cameras-list">
+        {% for camera in cameras %}
+        <div class="camera-card">
+          <div class="camera-card-header">
+            <div class="camera-info">
+              <i data-lucide="video"></i>
+              <div>
+                <strong>{{ camera.name }}</strong>
+                <p class="text-muted">
+                  {% if camera.rtsp_url %}
+                  RTSP - {{ camera.rtsp_url }}
+                  {% else %}
+                  Stream - {{ camera.stream_url|default:"N/A" }}
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+
+            <div class="camera-status">
+              {% if camera.is_active %}
+              <span class="badge-success">Ativa</span>
+              {% else %}
+              <span class="badge-inactive">Inativa</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="camera-card-actions">
+            <a href="{% url 'cameras:live' camera.pk %}" class="btn btn-sm btn-secondary">
+              <i data-lucide="play"></i>
+              Ao Vivo
+            </a>
+            <a href="{% url 'cameras:update' camera.pk %}" class="btn btn-sm btn-secondary">
+              <i data-lucide="edit"></i>
+              Editar
+            </a>
+            <button class="btn btn-sm btn-danger"
+              onclick="openDeleteModal('{{ camera.id }}', '{{ camera.name|escapejs }}')">
+              <i data-lucide="trash-2"></i>
+              Excluir
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal de Exclusão -->
+        <div class="modal" id="deleteModal-{{ camera.id }}">
+          <div class="modal-overlay" onclick="closeDeleteModal('{{ camera.id }}')"></div>
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4>Excluir câmera</h4>
+            </div>
+            <div class="modal-body">
+              <p>Deseja realmente excluir "<strong>{{ camera.name }}</strong>"?</p>
+            </div>
+            <div class="modal-footer">
+              <form method="post" action="{% url 'cameras:delete' camera.pk %}">
+                {% csrf_token %}
+                <button type="button" class="btn btn-secondary"
+                  onclick="closeDeleteModal('{{ camera.id }}')">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Excluir</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i data-lucide="camera-off" style="width: 64px; height: 64px; color: #ccc;"></i>
+        <h4>Nenhuma câmera cadastrada</h4>
+        <p class="text-muted">Adicione sua primeira câmera para começar</p>
+        <a href="{% url 'cameras:create' %}" class="btn btn-primary mt-3">
+          <i data-lucide="plus"></i>
+          Adicionar Câmera
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- CONFIGURAÇÕES GERAIS DA CÂMERA -->
+      <div class="camera-settings-section mt-5">
+        <h4>Configurações Gerais</h4>
+        <p class="text-muted">Configure parâmetros padrão das câmeras</p>
+
+        <div class="camera-grid mt-3">
+          <!-- RESOLUÇÃO -->
+          <div class="form-group">
+            <label class="form-label">Resolução Padrão</label>
+            <select class="form-control">
+              <option>1920x1080 (Full HD)</option>
+              <option>1280x720 (HD)</option>
+              <option>640x480 (VGA)</option>
+            </select>
+          </div>
+
+          <!-- FPS -->
+          <div class="form-group">
+            <label class="form-label">FPS Alvo</label>
+            <select class="form-control">
+              <option>30 FPS</option>
+              <option>25 FPS</option>
+              <option>15 FPS</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- AUTENTICAÇÃO -->
+        <div class="auth-box mt-3">
+          <div class="auth-info">
+            <i data-lucide="lock"></i>
+            <div>
+              <strong>Autenticação RTSP</strong>
+              <p class="text-muted">Usar credenciais de acesso por padrão</p>
+            </div>
+          </div>
+
+          <label class="switch">
+            <input type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary mt-4">
+          Salvar configurações gerais
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= LINHA VIRTUAL ================= -->
+    <!--<section class="config-section" id="tab-move">
+
+      <h3>Linha Virtual</h3>
+      <p class="text-muted">Configure a linha de contagem</p>
+
+      <!-- POSIÇÃO 
+      <div class="form-group">
+        <label class="form-label">
+          Posição Horizontal
+          <span class="range-value" id="linePositionValue">50%</span>
+        </label>
+
+        <input type="range" min="0" max="100" value="50" id="linePositionRange" class="range-input">
+      </div>
+
+      <div class="camera-grid">
+
+        <div class="form-group">
+          <label class="form-label">Cor da Linha</label>
+          <input type="color" id="lineColor" value="#00d1b2" class="color-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Espessura</label>
+          <select id="lineThickness" class="form-control">
+            <option value="1">1 px</option>
+            <option value="2">2 px</option>
+            <option value="3">3 px</option>
+            <option value="4">4 px</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="preview-box">
+        <span class="preview-label">Pré-visualização</span>
+
+        <div class="preview-area">
+          <div class="preview-line-horizontal" id="previewLine"></div>
+        </div>
+
+      </div>
+
+      <button class="btn btn-primary mt-4">
+        Salvar configurações
+      </button>
+
+    </section>-->
+
+    <!-- ================= SISTEMA ================= -->
+    <section class="config-section" id="tab-sistema">
+
+      <div class="content-header">
+        <div class="content-title">
+          <i data-lucide="server"></i>
+          <div>
+            <h3>Sistema</h3>
+            <p class="text-muted">Configurações gerais do sistema</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- OPÇÕES -->
+      <div class="system-list">
+
+        <!-- NOTIFICAÇÕES -->
+        <div class="system-item">
+          <div class="system-info">
+            <i data-lucide="bell"></i>
+            <div>
+              <strong>Notificações</strong>
+              <p class="text-muted">Receber alertas do sistema</p>
+            </div>
+          </div>
+
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- AUTO SAVE -->
+        <div class="system-item">
+          <div class="system-info">
+            <i data-lucide="save"></i>
+            <div>
+              <strong>Auto-save</strong>
+              <p class="text-muted">Salvar dados automaticamente</p>
+            </div>
+          </div>
+
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- INTERVALO -->
+        <div class="form-group full-width">
+          <label class="form-label">Intervalo de Gravação</label>
+          <select class="form-control">
+            <option>A cada 30 segundos</option>
+            <option selected>A cada 1 minuto</option>
+            <option>A cada 5 minutos</option>
+          </select>
+        </div>
+
+        <!-- ARMAZENAMENTO -->
+        <div class="form-group full-width">
+          <label class="form-label">Armazenamento</label>
+
+          <div class="storage-bar">
+            <div class="storage-progress" style="width: 35%;"></div>
+          </div>
+
+          <div class="storage-info">
+            <span>45.2 GB usados</span>
+            <span>128 GB total</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INFORMAÇÕES -->
+      <div class="system-info-box">
+
+        <strong>Informações do Sistema</strong>
+
+        <ul class="system-meta">
+          <li>
+            <span>Versão</span>
+            <span>PigVision OS 2.1.0</span>
+          </li>
+          <li>
+            <span>Dispositivo</span>
+            <span>NVIDIA Jetson Nano 4GB</span>
+          </li>
+          <li>
+            <span>JetPack</span>
+            <span>4.6.1</span>
+          </li>
+          <li>
+            <span>TensorRT</span>
+            <span>8.2.1</span>
+          </li>
+        </ul>
+
+      </div>
+
+      <button class="btn btn-primary mt-4">
+        Salvar configurações
+      </button>
+
+    </section>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/configuracao/configuracao.js' %}"></script>
+<script>
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('modelFileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const uploadForm = document.getElementById('uploadForm');
+
+  // Click para selecionar arquivo
+  uploadBox.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Drag and drop
+  uploadBox.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadBox.style.borderColor = '#00d1b2';
+    uploadBox.style.backgroundColor = '#f0f9ff';
+  });
+
+  uploadBox.addEventListener('dragleave', () => {
+    uploadBox.style.borderColor = '#ddd';
+    uploadBox.style.backgroundColor = 'transparent';
+  });
+
+  uploadBox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadBox.style.borderColor = '#ddd';
+    uploadBox.style.backgroundColor = 'transparent';
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      showFileInfo(files[0]);
+    }
+  });
+
+  // Quando selecionar arquivo
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      showFileInfo(e.target.files[0]);
+    }
+  });
+
+  function showFileInfo(file) {
+    if (!file.name.endsWith('.pt')) {
+      alert('Apenas arquivos .pt são permitidos!');
+      return;
+    }
+
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatFileSize(file.size);
+    
+    // Preenche o nome do modelo automaticamente (sem extensão)
+    const modelName = file.name.replace('.pt', '');
+    document.getElementById('modelName').value = modelName;
+    
+    uploadBox.style.display = 'none';
+    fileInfo.style.display = 'block';
+
+    // Renderiza ícones do Lucide
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }
+
+  function cancelUpload() {
+    fileInput.value = '';
+    uploadBox.style.display = 'block';
+    fileInfo.style.display = 'none';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  // Atualizar confiança
+  const confidenceRange = document.getElementById('confidenceRange');
+  const confidenceValue = document.getElementById('confidenceValue');
+
+  if (confidenceRange) {
+    confidenceRange.addEventListener('input', (e) => {
+      confidenceValue.textContent = e.target.value + '%';
+    });
+  }
+
+  function saveConfidence() {
+    const confidence = document.getElementById('confidenceRange').value;
+
+    fetch("{% url 'configuracao:update_confidence' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: `confidence=${confidence}`
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Confiança atualizada com sucesso!');
+        } else {
+          alert('Erro ao atualizar confiança');
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao atualizar confiança');
+      });
+  }
+
+  // Funções do modal de exclusão
+  function openDeleteModal(cameraId, cameraName) {
+    const modal = document.getElementById(`deleteModal-${cameraId}`);
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  function closeDeleteModal(cameraId) {
+    const modal = document.getElementById(`deleteModal-${cameraId}`);
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+</script>
+{% endblock %}

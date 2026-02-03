@@ -1,0 +1,187 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}{{ camera.name }} - Ao Vivo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'cameras:list' %}" class="text-secondary text-decoration-none">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    <h4 class="mb-0">
+      <i class="bi bi-camera-video"></i> {{ camera.name }}
+    </h4>
+  </div>
+
+  {% if error %}
+  <!-- Error Alert -->
+  <div class="alert alert-danger d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <div>{{ error }}</div>
+  </div>
+  {% else %}
+
+  <!-- Status Card -->
+  <div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Status:</strong>
+        <span id="status" class="text-warning ms-1">
+          <i class="bi bi-hourglass-split"></i> Conectando...
+        </span>
+      </div>
+      <div class="text-muted small text-truncate" style="max-width: 50%;">
+        {{ rtsp_url }}
+      </div>
+    </div>
+  </div>
+
+    <!-- Video Card -->
+    <div class="card shadow-sm mx-auto" style="max-width: 800px;">
+      <div class="ratio ratio-16x9 bg-black rounded">
+        {% if 'http' in rtsp_url and 'rtsp' not in rtsp_url %}
+          <!-- Câmera HTTP/MJPEG -->
+          <img id="mjpegStream" src="{{ rtsp_url }}" class="w-100 h-100" style="object-fit: contain;" alt="Stream MJPEG" />
+        {% else %}
+          <!-- Câmera RTSP via WebRTC -->
+          <video
+            id="video"
+            autoplay
+            playsinline
+            muted
+            class="w-100 h-100">
+          </video>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not error %}
+<script>
+  const rtspUrl = "{{ rtsp_url|escapejs }}";
+  const statusEl = document.getElementById("status");
+  
+  // Verifica se é HTTP/MJPEG ou RTSP
+  if (rtspUrl.startsWith('http') && !rtspUrl.startsWith('rtsp')) {
+    // Câmera HTTP/MJPEG
+    const img = document.getElementById('mjpegStream');
+    
+    img.onload = () => {
+      statusEl.innerHTML = `
+        <span class="text-success">
+          <i class="bi bi-broadcast"></i> Stream MJPEG ativo
+        </span>`;
+    };
+    
+    img.onerror = () => {
+      statusEl.innerHTML = `
+        <span class="text-danger">
+          <i class="bi bi-x-circle"></i> Erro ao carregar stream
+        </span>`;
+    };
+    
+  } else {
+    // Câmera RTSP via WebRTC
+    const video = document.getElementById("video");
+    
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    pc.addTransceiver('video', { direction: 'recvonly' });
+
+    pc.ontrack = (event) => {
+      video.srcObject = event.streams[0];
+      statusEl.innerHTML = `
+        <span class="text-success">
+          <i class="bi bi-broadcast"></i> Transmissão ao vivo
+        </span>`;
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "connected") {
+        statusEl.innerHTML = `
+          <span class="text-success">
+            <i class="bi bi-check-circle"></i> Conectado
+          </span>`;
+      } else if (pc.iceConnectionState === "checking") {
+        statusEl.innerHTML = `
+          <span class="text-warning">
+            <i class="bi bi-arrow-repeat"></i> Verificando conexão...
+          </span>`;
+      } else if (["failed", "disconnected"].includes(pc.iceConnectionState)) {
+        statusEl.innerHTML = `
+          <span class="text-danger">
+            <i class="bi bi-x-circle"></i> Conexão perdida
+          </span>`;
+      }
+    };
+
+    async function startStream() {
+      try {
+        statusEl.innerHTML = `
+          <span class="text-warning">
+            <i class="bi bi-plug"></i> Verificando servidor WebRTC...
+          </span>`;
+
+        // Tentar conectar ao webrtc_server.py
+        const health = await fetch("http://127.0.0.1:8887/health");
+        if (!health.ok) {
+          throw new Error("Servidor WebRTC indisponível");
+        }
+
+        const offer = await pc.createOffer({
+          offerToReceiveVideo: true,
+          offerToReceiveAudio: false
+        });
+
+        await pc.setLocalDescription(offer);
+
+        statusEl.innerHTML = `
+          <span class="text-warning">
+            <i class="bi bi-cloud-upload"></i> Conectando ao servidor...
+          </span>`;
+
+        const response = await fetch("http://127.0.0.1:8887/offer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            offer: { sdp: offer.sdp, type: offer.type },
+            rtsp_url: rtspUrl
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Erro ao conectar ao servidor WebRTC");
+        }
+
+        const data = await response.json();
+        await pc.setRemoteDescription(data.answer);
+
+        statusEl.innerHTML = `
+          <span class="text-warning">
+            <i class="bi bi-clock-history"></i> Aguardando stream...
+          </span>`;
+
+      } catch (err) {
+        statusEl.innerHTML = `
+          <span class="text-danger">
+            <i class="bi bi-x-octagon"></i> ${err.message}
+          </span>`;
+      }
+    }
+
+    startStream();
+  }
+</script>
+{% endif %}
+{% endblock %}

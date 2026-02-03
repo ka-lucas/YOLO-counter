@@ -1,0 +1,99 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}Meus Modelos{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Meus Modelos</h2>
+            <p class="text-muted">Gerencie seus modelos de IA enviados</p>
+            
+            <a href="{% url 'configuracao:index' %}" class="btn btn-primary mb-3">
+                <i class="bi bi-upload"></i> Enviar Novo Modelo
+            </a>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if models %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tamanho</th>
+                            <th>Confiança</th>
+                            <th>Visibilidade</th>
+                            <th>Status</th>
+                            <th>Enviado em</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model in models %}
+                        <tr>
+                            <td>
+                                <strong>{{ model.name }}</strong>
+                            </td>
+                            <td>
+                                {{ model.file_size }} MB
+                            </td>
+                            <td>
+                                {{ model.confidence_threshold|floatformat:0 }}%
+                            </td>
+                            <td>
+                                {% if model.is_public %}
+                                <span class="badge bg-success">🌐 Público</span>
+                                {% else %}
+                                <span class="badge bg-warning">🔒 Privado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if model.is_active %}
+                                <span class="badge bg-success">✓ Ativo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ model.uploaded_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'configuracao:model_edit' model.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% if not model.is_active %}
+                                    <a href="{% url 'configuracao:model_delete' model.pk %}" class="btn btn-sm btn-outline-danger" title="Deletar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-danger" disabled title="Ative outro modelo primeiro">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Você ainda não enviou nenhum modelo.
+                <a href="{% url 'configuracao:index' %}" class="alert-link">Envie um modelo agora</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

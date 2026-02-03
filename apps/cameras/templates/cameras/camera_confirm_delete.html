@@ -1,0 +1,15 @@
+{% extends "home/base.html" %}
+
+{% block title %}Excluir Câmera{% endblock %}
+
+{% block content %}
+<h1>Excluir câmera</h1>
+
+<p>Deseja realmente excluir "{{ camera.name }}"?</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Excluir</button>
+  <a href="{% url 'cameras:list' %}">Cancelar</a>
+</form>
+{% endblock %}

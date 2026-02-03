@@ -1,0 +1,56 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}Deletar Modelo{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <i class="bi bi-exclamation-triangle"></i> Deletar Modelo
+                </div>
+                <div class="card-body">
+                    <p>Tem certeza que deseja deletar o modelo <strong>{{ model.name }}</strong>?</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Atenção:</strong> Esta ação não pode ser desfeita. O arquivo será deletado permanentemente.
+                    </div>
+
+                    <div class="info-box mb-3">
+                        <dl class="row">
+                            <dt class="col-sm-4">Nome:</dt>
+                            <dd class="col-sm-8">{{ model.name }}</dd>
+                            <dt class="col-sm-4">Tamanho:</dt>
+                            <dd class="col-sm-8">{{ model.file_size }} MB</dd>
+                            <dt class="col-sm-4">Enviado em:</dt>
+                            <dd class="col-sm-8">{{ model.uploaded_at|date:"d/m/Y H:i" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <form method="POST" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Sim, deletar modelo
+                        </button>
+                    </form>
+                    <a href="{% url 'configuracao:index' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}

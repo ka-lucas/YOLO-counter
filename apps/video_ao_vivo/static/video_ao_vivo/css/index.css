@@ -1,0 +1,277 @@
+/* ====== PAGE ====== */
+.live-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+
+/* ====== HEADER ====== */
+.live-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.live-status {
+  background: #ef4444;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ====== GRID ====== */
+.live-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 24px;
+}
+
+/* ====== CARD ====== */
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* ====== VIDEO AREA ====== */
+.live-video {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.live-video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* 🔑 ISSO É O PRINCIPAL */
+  background: #000;      /* barras pretas como player normal */
+  display: block;
+}
+
+/* Top badges */
+.video-top {
+  display: flex;
+  gap: 10px;
+}
+
+.badge {
+  background: #e5e7eb;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge.success {
+  background: #22c55e;
+  color: #fff;
+}
+
+/* Canvas */
+/* Garante que o card do vídeo não deixa nada vazar */
+.live-video.card {
+  overflow: hidden;
+}
+
+/* Área exata do player */
+/* === Overlay da linha de contagem === */
+
+.video-canvas {
+  position: relative;
+}
+
+.video-canvas video,
+.video-canvas img {
+  position: relative;
+  z-index: 1;
+}
+
+.line-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;              /* 🔑 acima do vídeo */
+  pointer-events: all;
+}
+
+.count-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  top: 50%;
+  background: #00ff00;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.6);
+}
+
+
+/* Footer info */
+.video-footer {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Controls */
+.video-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.video-controls button {
+  border: none;
+  background: #f1f5f9;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.video-controls button:hover {
+  background: #e2e8f0;
+}
+
+/* ====== LOG ====== */
+.live-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.log-item {
+  display: grid;
+  grid-template-columns: 70px 1fr 40px;
+  gap: 8px;
+  font-size: 13px;
+  background: #f9fafb;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.log-item .time {
+  color: #6b7280;
+}
+
+.log-item .delta.plus {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.log-item .delta.minus {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.log-item .text {
+  color: #374151;
+}
+
+.counter-display {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 40px 20px;
+}
+
+.counter-item {
+  text-align: center;
+}
+
+.counter-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.counter-value {
+  display: block;
+  font-size: 48px;
+  font-weight: 700;
+  color: #2dd4bf;
+}
+
+#cameraSelection {
+  padding: 40px;
+  text-align: center;
+}
+
+#cameraSelection h3 {
+  margin-bottom: 20px;
+}
+
+#cameraSelection .form-control {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* visoes camera*/
+.camera-views {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.camera-card {
+  background: #1f2937;
+  border-radius: 10px;
+  width: 180px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.camera-card:hover {
+  border-color: #3b82f6;
+}
+
+.camera-card.active {
+  border-color: #22c55e;
+}
+
+.camera-preview {
+  background: #374151;
+  height: 90px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.camera-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #e5e7eb;
+  font-size: 13px;
+}
+
+.status {
+  font-size: 12px;
+}
+
+.status.online {
+  color: #22c55e;
+}
+
+.status.offline {
+  color: #ef4444;
+}

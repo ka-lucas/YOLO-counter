@@ -1,0 +1,57 @@
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: oink_plataform
+    runtime: nvidia  # Habilitar GPU
+    ports:
+      - "5050:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    env_file:
+      - .env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 300 --preload
+    restart: unless-stopped
+    networks:
+      - app-network
+    # Limitar recursos no Jetson Nano
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  webrtc:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: oink_webrtc
+    runtime: nvidia
+    ports:
+      - "8888:8080"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: python3 webrtc_server.py
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - app
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  static_volume:

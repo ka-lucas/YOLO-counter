@@ -1,0 +1,228 @@
+/* ==============================
+   TABELA MINIMAL (SaaS clean)
+============================== */
+.table-minimal {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-color);
+}
+
+.table-minimal thead {
+  background: #f9fafb;
+  color: var(--text-primary);
+}
+
+.table-minimal th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.table-minimal tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-secondary);
+}
+
+.table-minimal tbody tr {
+  transition: background 0.2s ease;
+}
+
+.table-minimal tbody tr:hover {
+  background: #f9fafb;
+}
+
+.table-minimal tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ==============================
+   BADGES
+============================== */
+.badge-id {
+  background: var(--primary-color);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.badge-type {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 500;
+  border: 1px solid var(--primary-light);
+}
+
+.badge-recorrente-sim {
+  background: #e6f7f5;
+  color: #0f766e;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 600;
+  border: 1px solid #99f6e4;
+}
+
+.badge-recorrente-nao {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+}
+
+/* ==============================
+   BOTÕES DE AÇÃO
+============================== */
+.btn-action {
+  padding: 6px 12px;
+  font-size: 0.8em;
+  border-radius: 8px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+}
+
+/* ==============================
+   CONTAINER DE TABELA
+============================== */
+.table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+}
+
+/* ==============================
+   CARD DE FILTRO
+============================== */
+.filter-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary-color);
+  box-shadow: none;
+}
+
+/* ==============================
+   BOTÕES
+============================== */
+.btn-primary {
+  background: var(--primary-color);
+  border: none;
+  color: #ffffff;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+.btn-gradient-blue {
+  background: var(--primary-color);
+  border: none;
+  color: #ffffff;
+}
+
+.btn-gradient-blue:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+.btn-outline-primary {
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+  background: var(--primary-color);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary.btn-filter:hover {
+  background: var(--sidebar-hover);
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: #6b7280;
+  border: none;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: #ef4444;
+  border: none;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background: #f59e0b;
+  border: none;
+  color: #ffffff;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+/* ==============================
+   CARDS
+============================== */
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* ==============================
+   ALERTAS
+============================== */
+.alert-info {
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #065f46;
+  border-radius: 12px;
+}

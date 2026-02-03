@@ -1,0 +1,117 @@
+{% extends 'home/base.html' %}
+
+{% block page_title %}Detalhes do Log{% endblock %}
+
+{% block content %}
+
+<div class="log-detail-card">
+  <div class="log-header">
+    <h2>Detalhes do Log Event</h2>
+    <a href="{% url 'historico:historico' %}"" class="back-link">← Voltar</a>
+  </div>
+
+  <div class="log-content">
+    <div class="log-field">
+      <label>Timestamp:</label>
+      <span>{{ log.timestamp|date:"d/m/Y H:i:s" }}</span>
+    </div>
+
+    <div class="log-field">
+      <label>Nível:</label>
+      <span class="status-badge {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}error{% elif log.level == 'WARNING' %}alert{% else %}normal{% endif %}">
+        {{ log.get_level_display }}
+      </span>
+    </div>
+
+    <div class="log-field">
+      <label>Módulo:</label>
+      <span>{{ log.module|default:"-" }}</span>
+    </div>
+
+    <div class="log-field">
+      <label>Usuário:</label>
+      <span>{{ log.user.username|default:"-" }}</span>
+    </div>
+
+    {% if log.ip_address %}
+    <div class="log-field">
+      <label>IP:</label>
+      <span>{{ log.ip_address }}</span>
+    </div>
+    {% endif %}
+
+    <div class="log-field full-width">
+      <label>Mensagem:</label>
+      <div class="log-message-full">{{ log.message }}</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.log-detail-card {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.back-link {
+  color: #2dd4bf;
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid #2dd4bf;
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  background: #2dd4bf;
+  color: white;
+}
+
+.log-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.log-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.log-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.log-field label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.log-field span {
+  color: #6b7280;
+}
+
+.log-message-full {
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+</style>
+{% endblock %}

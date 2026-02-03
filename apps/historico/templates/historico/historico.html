@@ -1,0 +1,370 @@
+{% extends 'home/base.html' %}
+
+{% block page_title %}Histórico{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <h2 class="mb-0">Histórico</h2>
+  <p class="text-muted">Análise de contagens e relatórios</p>
+</div>
+
+<!-- CARDS PRINCIPAIS -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted">Sessões (7 dias)</small>
+          <h3 class="mb-0">{{ totals.total_sessions|default:0 }}</h3>
+          <small class="text-success">↑ Contagens realizadas</small>
+        </div>
+        <div class="icon-circle bg-primary text-white">
+          <i data-lucide="activity"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <small class="text-muted">Total Entradas</small>
+        <h3 class="mb-0 text-success">{{ totals.total_in|default:0 }}</h3>
+        <small class="text-success">↑ Animais detectados</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <small class="text-muted">Total Saídas</small>
+        <h3 class="mb-0 text-danger">{{ totals.total_out|default:0 }}</h3>
+        <small class="text-danger">↓ Animais saindo</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <small class="text-muted">Saldo Final</small>
+        <h3 class="mb-0 {% if totals.balance > 0 %}text-success{% elif totals.balance < 0 %}text-danger{% else %}text-muted{% endif %}">
+          {{ totals.balance|default:0 }}
+        </h3>
+        <small class="text-muted">Diferença total</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRÁFICO + FILTROS -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="mb-3">
+          <h5 class="mb-0">Evolução das Contagens</h5>
+          <small class="text-muted">Últimos 7 dias - Entradas vs Saídas</small>
+        </div>
+        <div style="height: 300px;">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <h6 class="mb-3">Filtros de Busca</h6>
+        
+        <form method="get" class="mb-3">
+          <div class="mb-3">
+            <label class="form-label">Câmera</label>
+            <select name="camera" class="form-control">
+              <option value="">Todas as câmeras</option>
+              {% for camera_id, camera_name in user_cameras %}
+                <option value="{{ camera_id }}" {% if camera_filter == camera_id|stringformat:"s" %}selected{% endif %}>
+                  {{ camera_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Tipo de Animal</label>
+            <select name="animal" class="form-control">
+              <option value="">Todos</option>
+              {% for animal in animal_types %}
+                <option value="{{ animal }}" {% if animal_filter == animal %}selected{% endif %}>{{ animal }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Data</label>
+            <input type="date" name="date" value="{{ date_filter }}" 
+                   class="form-control">
+          </div>
+          
+          <button type="submit" class="btn btn-primary w-100">
+            <i data-lucide="search"></i> Filtrar
+          </button>
+        </form>
+
+        <div class="text-center">
+          <small class="text-muted">
+            {{ sessions.paginator.count }} sessão{{ sessions.paginator.count|pluralize:"ões" }} encontrada{{ sessions.paginator.count|pluralize }}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABELA DE SESSÕES -->
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Sessões de Contagem</h5>
+      <span class="badge bg-secondary">{{ sessions.paginator.count }} registros</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Data/Hora</th>
+            <th>Destinatário</th>
+            <th>Câmera</th>
+            <th>Lote</th>
+            <th>Duração</th>
+            <th class="text-center">Entradas</th>
+            <th class="text-center">Saídas</th>
+            <th class="text-center">Saldo</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+          <tr>
+            <td>
+              <div>{{ session.started_at|date:"d/m/Y" }}</div>
+              <small class="text-muted">{{ session.started_at|date:"H:i" }}</small>
+            </td>
+            <td>
+              <div>{{ session.recipient|default:"-"}}</div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark">{{ session.camera.name }}</span>
+            </td>
+            <td>
+              <div>{{ session.batch_number|default:"-" }}</div>
+            </td>
+            <td>
+              {% if session.ended_at %}
+                {% with duration=session.ended_at|timeuntil:session.started_at %}
+                  <small class="text-muted">{{ duration }}</small>
+                {% endwith %}
+              {% else %}
+                <span class="badge bg-warning">Em andamento</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <span class="badge bg-success">{{ session.total_in }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-danger">{{ session.total_out }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge {% if session.balance > 0 %}bg-success{% elif session.balance < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                {{ session.balance }}
+              </span>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'historico:log_detail' session.id %}" 
+                 class="btn btn-sm btn-outline-primary">
+                <i data-lucide="eye"></i> Ver
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4">
+              <div class="text-muted">
+                <i data-lucide="inbox" class="mb-2"></i>
+                <p>Nenhuma sessão encontrada</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    {% if sessions.has_other_pages %}
+    <nav aria-label="Paginação">
+      <ul class="pagination justify-content-center">
+        {% if sessions.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ sessions.previous_page_number }}{% if camera_filter %}&camera={{ camera_filter }}{% endif %}{% if animal_filter %}&animal={{ animal_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+              Anterior
+            </a>
+          </li>
+        {% endif %}
+
+        <li class="page-item active">
+          <span class="page-link">
+            Página {{ sessions.number }} de {{ sessions.paginator.num_pages }}
+          </span>
+        </li>
+
+        {% if sessions.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ sessions.next_page_number }}{% if camera_filter %}&camera={{ camera_filter }}{% endif %}{% if animal_filter %}&animal={{ animal_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+              Próxima
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Dados do gráfico
+  const dailyData = {{ daily_data|safe }};
+
+  // Configurar gráfico
+  const ctx = document.getElementById('dailyChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dailyData.map(d => `${d.weekday}\n${d.date}`),
+        datasets: [{
+          label: 'Entradas',
+          data: dailyData.map(d => d.in),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8
+        }, {
+          label: 'Saídas',
+          data: dailyData.map(d => d.out),
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#f59e0b',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8
+        }, {
+          label: 'Saldo',
+          data: dailyData.map(d => d.balance),
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          tension: 0.4,
+          fill: false,
+          borderDash: [5, 5],
+          pointBackgroundColor: '#6366f1',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: {
+                size: 12,
+                weight: '500'
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#ffffff',
+            borderColor: '#374151',
+            borderWidth: 1,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              title: function(context) {
+                const dataIndex = context[0].dataIndex;
+                const data = dailyData[dataIndex];
+                return `${data.weekday} - ${data.date}`;
+              },
+              afterBody: function(context) {
+                const dataIndex = context[0].dataIndex;
+                const data = dailyData[dataIndex];
+                return `Sessões: ${data.sessions}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { 
+            grid: { 
+              display: false 
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              maxRotation: 0
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+              font: {
+                size: 11
+              }
+            },
+            grid: { 
+              borderDash: [2, 2],
+              color: 'rgba(0, 0, 0, 0.1)'
+            }
+          }
+        },
+        elements: {
+          line: {
+            borderWidth: 3
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

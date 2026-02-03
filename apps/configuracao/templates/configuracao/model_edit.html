@@ -1,0 +1,61 @@
+{% extends "home/base.html" %}
+{% load static %}
+
+{% block title %}Editar Modelo{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Editar Modelo</h2>
+            
+            <form method="POST" class="mt-4">
+                {% csrf_token %}
+                
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Nome -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome do Modelo</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ model.name }}" required>
+                        </div>
+
+                        <!-- Arquivo -->
+                        <div class="mb-3">
+                            <label class="form-label">Arquivo</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" disabled value="{{ model.model_file.name }}">
+                                <span class="input-group-text">{{ model.file_size }} MB</span>
+                            </div>
+                            <small class="text-muted">O arquivo não pode ser alterado. Se precisar de outro arquivo, delete este e envie um novo.</small>
+                        </div>
+
+                        <!-- Confiança -->
+                        <div class="mb-3">
+                            <label for="confidence_threshold" class="form-label">Confiança Mínima</label>
+                            <div class="input-group">
+                                <input type="range" class="form-range" id="confidence_threshold" name="confidence_threshold" 
+                                       min="0" max="1" step="0.01" value="{{ model.confidence_threshold }}"
+                                       oninput="document.getElementById('confidence_display').innerText = (this.value * 100).toFixed(0)">
+                                <span class="input-group-text">
+                                    <span id="confidence_display">{{ model.confidence_threshold|floatformat:0 }}</span>%
+                                </span>
+                            </div>
+                            <small class="text-muted">Detecções com confiança menor que este valor serão ignoradas</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Salvar Alterações
+                    </button>
+                    <a href="{% url 'configuracao:index' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
