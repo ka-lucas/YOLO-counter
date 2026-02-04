@@ -1,4 +1,4 @@
-# Oink Platform 🐷
+# Yolo Counter
 
 Plataforma de monitoramento de vídeo inteligente (NVR/VMS) focada em performance e execução em dispositivos de borda (Edge AI), como NVIDIA Jetson Nano.
 
@@ -136,7 +136,7 @@ docker-compose exec app python scripts/create_superuser.py
 | **WebRTC** | `ws://localhost:8888` | Streaming de vídeo em tempo real |
 
 **Credenciais Padrão:**
-- Usuário: `gaspar`
+- Usuário: `contador_user`
 - Senha: Definida durante `create_superuser.py`
 
 ## ⚙️ Configuração
