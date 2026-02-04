@@ -220,7 +220,7 @@ docker-compose logs -f app
 docker-compose logs -f webrtc
 
 # Logs de um container específico
-docker logs -f oink_plataform
+docker logs -f yolo_counter_plataform
 
 # Acesse as estatísticas
 docker stats
