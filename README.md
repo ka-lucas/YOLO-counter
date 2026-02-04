@@ -33,7 +33,7 @@ O sistema transforma câmeras RTSP comuns em um sistema de vigilância e detecç
 ## 📂 Estrutura do Projeto
 
 ```
-oink-platform/
+yolo_counter-platform/
 ├── apps/                      # Aplicações Django (Lógica de negócios)
 │   ├── cameras/               # Gestão de dispositivos e configuração
 │   │   ├── models.py          # Modelo de Câmera + Classes YOLO
@@ -94,7 +94,7 @@ oink-platform/
 ```bash
 # Clone o repositório
 git clone <url-do-repo>
-cd oink-platform
+cd yolo_counter_platform
 
 # Construa os containers (auto-detecta arquitetura)
 make build
@@ -136,7 +136,7 @@ docker-compose exec app python scripts/create_superuser.py
 | **WebRTC** | `ws://localhost:8888` | Streaming de vídeo em tempo real |
 
 **Credenciais Padrão:**
-- Usuário: `contador_user`
+- Usuário: `user_counter`
 - Senha: Definida durante `create_superuser.py`
 
 ## ⚙️ Configuração
@@ -146,7 +146,7 @@ docker-compose exec app python scripts/create_superuser.py
 ```env
 # Banco de dados
 DB_ENGINE=django.db.backends.mysql
-DB_NAME=oink_db
+DB_NAME=
 DB_USER=root
 DB_PASSWORD=senha_db
 DB_HOST=mysql
