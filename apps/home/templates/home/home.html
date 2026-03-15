@@ -2,11 +2,83 @@
 
 {% block page_title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+  .dashboard-cameras {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dashboard-camera-tile {
+    min-height: 132px;
+    padding: 12px;
+    border-radius: 16px;
+    background: #f8f9fc;
+    border: 1px solid #eef1f6;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dashboard-camera-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #9aa3b2;
+  }
+
+  .dashboard-camera-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c6ccd6;
+  }
+
+  .dashboard-camera-status.online {
+    color: #11a36a;
+  }
+
+  .dashboard-camera-status.online::before {
+    background: #11a36a;
+  }
+
+  .dashboard-camera-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #97a0af;
+    text-align: center;
+  }
+
+  .dashboard-camera-center i {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dashboard-camera-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #667085;
+  }
+
+  @media (max-width: 576px) {
+    .dashboard-cameras {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {% load static %}
 
 <div class="mb-3">
-  <h2 class="mb-0">Dashboard</h2>
+  <h2 class="mb-0">Visão Geral</h2>
   <p class="text-muted">Monitoramento em tempo real</p>
 </div>
 
@@ -16,7 +88,7 @@
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-          <small class="text-muted">Total de Suínos Detectados Hoje</small>
+          <small class="text-muted">Total de Deteccoes Hoje</small>
           <h3 class="mb-0">{{ today_detected }}</h3>
           <small class="{% if detected_change >= 0 %}text-success{% else %}text-danger{% endif %}">
             {% if detected_change >= 0 %}↑{% else %}↓{% endif %} {{ detected_change|floatformat:0 }}% comparado a ontem
@@ -44,7 +116,7 @@
   <div class="col-lg-4">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
-        <small class="text-muted">Saídas</small>
+        <small class="text-muted">Saidas</small>
         <h3 class="mb-0">{{ today_out }}</h3>
         <small class="{% if out_change >= 0 %}text-success{% else %}text-danger{% endif %}">
           {% if out_change >= 0 %}↑{% else %}↓{% endif %} {{ out_change|floatformat:0 }}%
@@ -54,14 +126,14 @@
   </div>
 </div>
 
-<!-- GRÁFICO + VÍDEO -->
+<!-- GRAFICO + VIDEO -->
 <div class="row g-3 mb-4">
   <div class="col-lg-8">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
         <div class="mb-3">
-          <h5 class="mb-0">Evolução das Contagens</h5>
-          <small class="text-muted">Últimos 7 dias - Entradas vs Saídas vs Saldo</small>
+          <h5 class="mb-0">Evolucao das Contagens</h5>
+          <small class="text-muted">Ultimos 7 dias - Entradas vs Saidas vs Saldo</small>
         </div>
         <div style="height: 300px;">
           <canvas id="movementChart"></canvas>
@@ -74,24 +146,35 @@
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Visão ao Vivo</h6>
-          <span class="badge bg-danger">REC</span>
+          <h6 class="mb-0">Visao ao Vivo</h6>
+          <small class="text-muted">{{ dashboard_cameras|length }} dispositivo{{ dashboard_cameras|length|pluralize:"s" }}</small>
         </div>
 
-        <div class="video-container mb-3 position-relative">
-          <div class="w-100 rounded bg-dark d-flex align-items-center justify-content-center" style="height: 200px;">
-            <div class="text-white text-center">
-              <i data-lucide="camera-off" class="mb-2" style="width: 48px; height: 48px;"></i>
-              <p class="mb-0">Nenhuma câmera disponível</p>
-              <small class="text-muted">Cadastre uma câmera nas configurações</small>
+        <div class="dashboard-cameras mb-3">
+          {% for camera in dashboard_cameras %}
+          <div class="dashboard-camera-tile">
+            <span class="dashboard-camera-status {% if camera.is_online %}online{% endif %}">
+              {{ camera.status_label }}
+            </span>
+            <div class="dashboard-camera-center">
+              <i data-lucide="{% if camera.is_online %}camera{% else %}camera-off{% endif %}"></i>
+              <span class="dashboard-camera-name">{{ camera.name }}</span>
             </div>
           </div>
+          {% empty %}
+          <div class="dashboard-camera-tile" style="grid-column: 1 / -1;">
+            <div class="dashboard-camera-center">
+              <i data-lucide="camera-off"></i>
+              <span class="dashboard-camera-name">Nenhuma camera cadastrada</span>
+            </div>
+          </div>
+          {% endfor %}
         </div>
 
         <div class="d-flex gap-2">
           <a href="{% url 'cameras:create' %}" class="btn btn-primary w-100">
             <i data-lucide="plus"></i>
-            Adicionar Câmera
+            Adicionar Camera
           </a>
         </div>
       </div>
@@ -115,7 +198,7 @@
         </div>
 
         <div class="mb-3">
-          <small>FPS Inferência</small>
+          <small>FPS Inferencia</small>
           <div class="progress">
             <div class="progress-bar bg-info" style="width: 65%"></div>
           </div>
@@ -131,7 +214,7 @@
         </div>
 
         <div>
-          <small>Memória RAM</small>
+          <small>Memoria RAM</small>
           <div class="progress">
             <div class="progress-bar {% if ram_usage < 60 %}bg-primary{% elif ram_usage < 80 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ ram_usage }}%"></div>
           </div>
@@ -145,7 +228,7 @@
     <div class="card shadow-sm border-0 h-100">
       <div class="card-body">
         <h6>Fluxo por Minuto</h6>
-        <small class="text-muted">Últimos 10 minutos</small>
+        <small class="text-muted">Ultimos 10 minutos</small>
         <div style="height: 160px;">
           <canvas id="minuteChart"></canvas>
         </div>
@@ -158,34 +241,27 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6>Alertas Inteligentes</h6>
-          <small class="text-muted">3 novos</small>
+          <small class="text-muted">{{ alerts|length }} novo{{ alerts|length|pluralize:"s" }}</small>
         </div>
 
         <ul class="list-group list-group-flush">
+          {% for alert in alerts %}
           <li class="list-group-item">
-            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-            Câmera 02 com baixa luminosidade<br>
-            <small class="text-muted">há 5 min</small>
+            <i class="bi bi-{{ alert.icon }} text-{% if alert.level == 'danger' %}danger{% elif alert.level == 'warning' %}warning{% elif alert.level == 'success' %}success{% else %}primary{% endif %} me-1"></i>
+            {{ alert.message }}<br>
+            <small class="text-muted">{{ alert.time_label }}</small>
           </li>
-
+          {% empty %}
           <li class="list-group-item">
             <i class="bi bi-check-circle-fill text-success me-1"></i>
-            Modelo atualizado com sucesso<br>
-            <small class="text-muted">há 20 min</small>
+            Nenhum alerta relevante no momento.<br>
+            <small class="text-muted">tempo real</small>
           </li>
-
-          <li class="list-group-item">
-            <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>
-            Movimentação anormal detectada<br>
-            <small class="text-muted">há 1 hora</small>
-          </li>
+          {% endfor %}
         </ul>
-
       </div>
     </div>
   </div>
-</div>
-
 </div>
 {% endblock %}
 
@@ -195,38 +271,30 @@ document.addEventListener("DOMContentLoaded", function () {
   let movementChart = null;
   let minuteChart = null;
 
-  // Função para atualizar gráficos com dados em tempo real
   function updateCharts() {
     fetch('/video-ao-vivo/api/chart-data/')
       .then(response => response.json())
       .then(data => {
-        console.log('Dados recebidos:', data); // Debug
         if (data.ok) {
           updateMovementChart(data.hourly_data);
           updateMinuteChart(data.minute_data);
         } else {
-          console.error('Erro na resposta:', data.error);
           initializeWithStaticData();
         }
       })
-      .catch(error => {
-        console.error('Erro ao buscar dados dos gráficos:', error);
+      .catch(() => {
         initializeWithStaticData();
       });
   }
 
-  // Função para inicializar com dados estáticos
   function initializeWithStaticData() {
     const staticHourlyData = [{% for hour_data in hourly_data %}{hour: "{{ hour_data.hour }}", in: {{ hour_data.in }}, out: {{ hour_data.out }}}{% if not forloop.last %},{% endif %}{% endfor %}];
     const staticMinuteData = [{% for minute_val in minute_data %}{{ minute_val }}{% if not forloop.last %},{% endif %}{% endfor %}];
-    
-    console.log('Dados estáticos:', {hourly: staticHourlyData, minute: staticMinuteData}); // Debug
-    
+
     updateMovementChart(staticHourlyData.length > 0 ? staticHourlyData : generateEmptyHourlyData());
     updateMinuteChart(staticMinuteData.length > 0 ? staticMinuteData : [0,0,0,0,0,0,0,0,0,0]);
   }
 
-  // Função para gerar dados vazios por hora
   function generateEmptyHourlyData() {
     const data = [];
     const now = new Date();
@@ -241,36 +309,29 @@ document.addEventListener("DOMContentLoaded", function () {
     return data;
   }
 
-  // Função para atualizar contadores em tempo real
   function updateCounters() {
     fetch('/video-ao-vivo/api/status/')
       .then(response => response.json())
       .then(data => {
         if (data.running) {
-          // Atualizar cards com dados em tempo real
           const totalDetected = data.in + data.out;
           document.querySelector('h3').textContent = totalDetected;
           document.querySelectorAll('h3')[1].textContent = data.in;
           document.querySelectorAll('h3')[2].textContent = data.out;
         }
       })
-      .catch(error => {
-        console.error('Erro ao buscar status:', error);
-      });
+      .catch(() => {});
   }
 
-  // ===== Gráfico Fluxo por Hora =====
   function updateMovementChart(hourlyData) {
     const movementCtx = document.getElementById("movementChart");
     if (!movementCtx) return;
 
-    // Garantir que sempre temos dados
     const safeHourlyData = hourlyData && hourlyData.length > 0 ? hourlyData : generateEmptyHourlyData();
-    
     const labels = safeHourlyData.map(d => d.hour);
     const entriesData = safeHourlyData.map(d => d.in || 0);
     const exitsData = safeHourlyData.map(d => d.out || 0);
-    
+
     if (movementChart) {
       movementChart.data.labels = labels;
       movementChart.data.datasets[0].data = entriesData;
@@ -297,7 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
               pointHoverRadius: 8
             },
             {
-              label: "Saídas",
+              label: "Saidas",
               data: exitsData,
               borderColor: "#f59e0b",
               backgroundColor: "rgba(245, 158, 11, 0.1)",
@@ -333,7 +394,7 @@ document.addEventListener("DOMContentLoaded", function () {
             mode: 'index'
           },
           plugins: {
-            legend: { 
+            legend: {
               display: true,
               position: 'top',
               labels: {
@@ -356,7 +417,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
           },
           scales: {
-            x: { 
+            x: {
               grid: { display: false },
               ticks: {
                 font: { size: 11 },
@@ -369,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 stepSize: 1,
                 font: { size: 11 }
               },
-              grid: { 
+              grid: {
                 borderDash: [2, 2],
                 color: 'rgba(0, 0, 0, 0.1)'
               }
@@ -385,14 +446,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // ===== Gráfico Fluxo por Minuto =====
   function updateMinuteChart(minuteData) {
     const minuteCtx = document.getElementById("minuteChart");
     if (!minuteCtx) return;
-    
-    // Garantir que sempre temos dados
+
     const safeMinuteData = minuteData && minuteData.length > 0 ? minuteData : [0,0,0,0,0,0,0,0,0,0];
-    
+
     if (minuteChart) {
       minuteChart.data.datasets[0].data = safeMinuteData;
       minuteChart.update('none');
@@ -402,7 +461,7 @@ document.addEventListener("DOMContentLoaded", function () {
         data: {
           labels: ["10min","9min","8min","7min","6min","5min","4min","3min","2min","1min"],
           datasets: [{
-            label: "Detecções",
+            label: "Deteccoes",
             data: safeMinuteData,
             backgroundColor: function(context) {
               const value = context.parsed.y;
@@ -437,17 +496,17 @@ document.addEventListener("DOMContentLoaded", function () {
               cornerRadius: 6,
               callbacks: {
                 title: function(context) {
-                  return context[0].label + ' atrás';
+                  return context[0].label + ' atras';
                 },
                 label: function(context) {
                   const value = context.parsed.y;
-                  return value === 1 ? '1 detecção' : value + ' detecções';
+                  return value === 1 ? '1 deteccao' : value + ' deteccoes';
                 }
               }
             }
           },
           scales: {
-            x: { 
+            x: {
               grid: { display: false },
               ticks: {
                 font: { size: 10 },
@@ -456,13 +515,13 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             y: {
               beginAtZero: true,
-              ticks: { 
+              ticks: {
                 display: true,
                 stepSize: 1,
                 font: { size: 10 },
                 color: '#6b7280'
               },
-              grid: { 
+              grid: {
                 display: true,
                 color: 'rgba(0, 0, 0, 0.05)',
                 borderDash: [2, 2]
@@ -478,17 +537,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Inicializar gráficos
-  initializeWithStaticData(); // Inicializar primeiro com dados estáticos
-  updateCharts(); // Depois tentar atualizar com dados dinâmicos
+  initializeWithStaticData();
+  updateCharts();
   updateCounters();
-  
-  // Atualizar gráficos a cada 30 segundos
   setInterval(updateCharts, 30000);
-  
-  // Atualizar contadores a cada 5 segundos
   setInterval(updateCounters, 5000);
-
 });
 </script>
 
