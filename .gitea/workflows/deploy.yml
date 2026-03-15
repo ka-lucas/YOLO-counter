@@ -1,0 +1,60 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        timeout-minutes: 45
+        with:
+          host: 100.93.97.65
+          username: service-account
+          password: ${{ secrets.SSH_PASSWORD }}
+          command_timeout: 45m
+          script: |
+            cd projetos/oink-platform
+            
+            git pull origin main
+            
+            docker-compose -f docker-compose.x86.yml down -v
+            
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            export BUILDKIT_PROGRESS=plain
+            
+            docker-compose -f docker-compose.x86.yml build --progress=plain
+            docker-compose -f docker-compose.x86.yml up -d
+
+            echo "Checking WebRTC container status..."
+            docker-compose -f docker-compose.x86.yml ps webrtc
+
+            echo "WebRTC container logs:"
+            docker-compose -f docker-compose.x86.yml logs webrtc
+
+            docker logs oink_webrtc_x86
+            
+            echo "Waiting for database to be ready..."
+            sleep 10
+            
+            docker-compose -f docker-compose.x86.yml exec -T app python manage.py migrate
+            
+            docker-compose -f docker-compose.x86.yml exec -T \
+              -e DJANGO_SUPERUSER_EMAIL='${{ secrets.DJANGO_SUPERUSER_EMAIL }}' \
+              -e DJANGO_SUPERUSER_PASSWORD='${{ secrets.DJANGO_SUPERUSER_PASSWORD }}' \
+              app python create_superuser.py
+            
+            docker-compose -f docker-compose.x86.yml exec -T app python manage.py collectstatic --noinput
+            
+            docker-compose -f docker-compose.x86.yml ps
+            docker-compose -f docker-compose.x86.yml logs --tail=50

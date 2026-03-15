@@ -4,13 +4,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}PigVision{% endblock %}</title>
+  <title>{% block title %}Yolo Counter{% endblock %}</title>
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <!-- CSS GLOBAL -->
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=2.0">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=2.0">
 
   {% block extra_css %}{% endblock %}
 </head>
@@ -20,59 +21,40 @@
   <!-- OVERLAY -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
+  <!-- NAVBAR HORIZONTAL -->
+  <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="logo-circle">P</div>
+      <div class="logo-circle">YC</div>
       <div>
-        <h4>PigVision</h4>
-        <div class="sidebar-subtitle">Smart Counting OS</div>
+        <h4>Yolo Counter <span class="brand-highlight">OS</span></h4>
       </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <a href="/">
+    <div class="sidebar-nav">
+      <a href="/" class="{% if request.path == '/' %}active{% endif %}">
         <i data-lucide="layout-dashboard"></i>
-        Dashboard
+        Visão Geral
       </a>
 
-      <a href="/video-ao-vivo/">
+      <a href="/video-ao-vivo/" class="{% if '/video-ao-vivo/' in request.path %}active{% endif %}">
         <i data-lucide="video"></i>
-        Vídeo Ao Vivo
+        Video Ao Vivo
       </a>
 
-      <a href="/historico/">
+      <a href="/historico/" class="{% if '/historico/' in request.path %}active{% endif %}">
         <i data-lucide="history"></i>
-        Histórico
+        Historico
       </a>
 
-      <a href="/configuracoes/">
+      <a href="/configuracoes/" class="{% if '/configuracoes/' in request.path %}active{% endif %}">
         <i data-lucide="settings"></i>
-        Configurações
+        Configuracoes
       </a>
+    </div>
 
-      <form method="post" action="{% url 'logout' %}" class="logout-form">
-        {% csrf_token %}
-        <button type="submit" class="logout-link">
-          <i data-lucide="log-out"></i>
-          Sair
-        </button>
-      </form>
-    </nav>
-
-  </aside>
-
-  <!-- CONTEÚDO PRINCIPAL -->
-  <div class="main-content" id="mainContent">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <div class="d-flex align-items-center gap-3">
-        <button class="toggle-btn" id="toggleBtn">☰</button>
-      </div>
-
-      <div class="user-info">
-        {% if user.is_authenticated %}
+    {% if user.is_authenticated %}
+      <div class="navbar-user dropdown">
+        <button class="user-menu-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           {% with social=user.social_auth.all|first %}
             {% if social %}
               {% with photo=social.extra_data.picture %}
@@ -84,20 +66,44 @@
                   </div>
                 {% endif %}
               {% endwith %}
+            {% else %}
+              <div class="avatar-initial">
+                {{ user.email|first|upper }}
+              </div>
             {% endif %}
           {% endwith %}
-        {% endif %}
+          <span class="user-menu-name">{{ request.user }}</span>
+        </button>
 
+        <div class="dropdown-menu dropdown-menu-end user-dropdown">
+          <div class="user-dropdown-header">
+            <strong>{{ request.user }}</strong>
+            <span>Usuario logado</span>
+          </div>
 
-        <strong class="d-none d-md-block">{{ request.user }}</strong>
+          <form method="post" action="{% url 'logout' %}" class="user-dropdown-form">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item logout-dropdown-link">
+              <i data-lucide="log-out"></i>
+              Sair da conta
+            </button>
+          </form>
+        </div>
       </div>
+    {% endif %}
+  </nav>
+
+  <!-- CONTEUDO PRINCIPAL -->
+  <div class="main-content" id="mainContent">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="toggle-btn" id="toggleBtn">&#9776;</button>
     </header>
 
-    <!-- ÁREA DE CONTEÚDO -->
+    <!-- AREA DE CONTEUDO -->
     <main class="content-area">
       {% block content %}{% endblock %}
     </main>
-
   </div>
 
   <!-- Bootstrap JS -->
@@ -105,47 +111,37 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"/>
 
-
-
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Toggle Sidebar Script -->
-  <!-- Toggle Sidebar Script -->
   <script>
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('toggleBtn');
     const overlay = document.getElementById('sidebarOverlay');
-    const mainContent = document.getElementById('mainContent');
 
-    toggleBtn.addEventListener('click', function() {
-      // Em telas menores, usa 'active' e mostra overlay
-      if (window.innerWidth <= 992) {
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
         sidebar.classList.toggle('active');
         overlay.classList.toggle('active');
-      } else {
-        // Em telas maiores, usa 'collapsed'
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('expanded');
-      }
-    });
+      });
+    }
 
-    overlay.addEventListener('click', function() {
-      sidebar.classList.remove('active');
-      overlay.classList.remove('active');
-    });
+    if (overlay) {
+      overlay.addEventListener('click', function() {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+      });
+    }
 
-    // Fecha o menu ao clicar em um link (apenas mobile)
-    document.querySelectorAll('.sidebar-nav a, .logout-link').forEach(link => {
+    document.querySelectorAll('.sidebar-nav a, .logout-dropdown-link').forEach(link => {
       link.addEventListener('click', function() {
-        if (window.innerWidth <= 992) {
+        if (window.innerWidth <= 768) {
           sidebar.classList.remove('active');
           overlay.classList.remove('active');
         }
       });
     });
 
-    // Ativa ícones
     lucide.createIcons();
   </script>
 

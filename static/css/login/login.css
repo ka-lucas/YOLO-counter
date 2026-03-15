@@ -7,59 +7,140 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: linear-gradient(135deg, #e8eef3 0%, #d4dce5 100%);
-  min-height: 100vh;
-}
-
-/* ===== CONTAINER DE LOGIN ===== */
-.login-container {
+  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
 }
 
-.login-card {
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-  padding: 48px 40px;
+/* ===== PAGE CONTAINER ===== */
+.pv-page {
   width: 100%;
-  max-width: 440px;
-  text-align: center;
+  height: 100vh;
 }
 
-/* ===== LOGO ===== */
-.logo-container {
-  margin-bottom: 24px;
+.pv-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: white;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.logo {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #60d0ba 0%, #4fc3ac 100%);
-  border-radius: 20px;
-  display: inline-flex;
+/* ===== HERO (ESQUERDA) ===== */
+.pv-hero {
+  position: relative;
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+}
+
+.pv-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="none"/><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+  opacity: 0.3;
+}
+
+.pv-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.pv-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 60px;
+}
+
+.pv-brand-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
+  backdrop-filter: blur(10px);
 }
 
-.logo svg {
-  width: 42px;
-  height: 42px;
+.pv-brand-icon svg {
+  width: 28px;
+  height: 28px;
   fill: white;
 }
 
-.logo-text {
-  font-size: 28px;
-  font-weight: 600;
-  color: #1a202c;
-  margin: 20px 0 8px;
+.pv-brand-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
 }
 
-.logo-subtitle {
+.pv-hero-text {
+  margin-top: auto;
+}
+
+.pv-hero-kicker {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.pv-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  color: white;
+}
+
+.pv-hero-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+.pv-hero-footer {
+  margin-top: 300px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== AUTH (DIREITA) ===== */
+.pv-auth {
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pv-auth-inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.pv-auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+
+.pv-auth-subtitle {
   font-size: 15px;
   color: #718096;
   margin-bottom: 32px;
@@ -161,9 +242,9 @@ body {
 
 .form-input:focus {
   outline: none;
-  border-color: #60d0ba;
+  border-color: #6366F1;
   background: white;
-  box-shadow: 0 0 0 3px rgba(96, 208, 186, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .form-input::placeholder {
@@ -214,25 +295,25 @@ body {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #60d0ba;
+  accent-color: #6366F1;
 }
 
 .forgot-password {
-  color: #60d0ba;
+  color: #6366F1;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
 }
 
 .forgot-password:hover {
-  color: #4fc3ac;
+  color: #4F46E5;
 }
 
 /* ===== BOTÃO LOGIN ===== */
 .btn-login {
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, #60d0ba 0%, #4fc3ac 100%);
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -240,23 +321,20 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(96, 208, 186, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(96, 208, 186, 0.4);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
 .btn-login:active {
   transform: translateY(0);
-}
-
-/* ===== FOOTER ===== */
-.footer-text {
-  margin-top: 32px;
-  font-size: 13px;
-  color: #a0aec0;
 }
 
 /* ===== ALERTAS ===== */
@@ -281,23 +359,27 @@ body {
 }
 
 /* ===== RESPONSIVO ===== */
+@media (max-width: 992px) {
+  .pv-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .pv-hero {
+    display: none;
+  }
+
+  .pv-auth {
+    padding: 32px 24px;
+  }
+}
+
 @media (max-width: 480px) {
-  .login-card {
-    padding: 36px 24px;
+  .pv-shell {
+    min-height: 100vh;
   }
 
-  .logo {
-    width: 70px;
-    height: 70px;
-  }
-
-  .logo svg {
-    width: 36px;
-    height: 36px;
-  }
-
-  .logo-text {
-    font-size: 24px;
+  .pv-auth {
+    padding: 24px;
   }
 
   .remember-forgot {

@@ -1,7 +1,7 @@
 {% extends "home/base.html" %}
 {% load static %}
 
-{% block title %}Configurações | PigVision{% endblock %}
+{% block title %}Configurações | Yolo Counter{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/configuracao/configuracao.css' %}">
@@ -9,9 +9,11 @@
 
 {% block content %}
 
-<div class="mb-3">
+<div class="page-header config-page-header">
+  <div>
   <h2>Configurações</h2>
   <p class="text-muted">Gerencie as configurações do sistema de contagem de animais</p>
+  </div>
 </div>
 
 <div class="config-grid">
@@ -479,7 +481,7 @@
         <ul class="system-meta">
           <li>
             <span>Versão</span>
-            <span>PigVision OS 2.1.0</span>
+            <span>Yolo Counter OS 2.1.0</span>
           </li>
           <li>
             <span>Dispositivo</span>
