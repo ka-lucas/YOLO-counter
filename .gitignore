@@ -37,6 +37,7 @@ db.sqlite3
 media/
 staticfiles/
 *.mo
+./.gitea
 
 # Flask stuff (opcional, caso use junto)
 instance/
