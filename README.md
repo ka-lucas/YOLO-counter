@@ -1,7 +1,6 @@
 # Oink Platform 🐷
 
 Plataforma de monitoramento de vídeo inteligente (NVR/VMS) focada em performance e execução em dispositivos de borda (Edge AI), como NVIDIA Jetson Nano.
-
 O sistema transforma câmeras RTSP comuns em um sistema de vigilância e detecção avançado com visualização de baixa latência via WebRTC e detecção inteligente de objetos com IA.
 
 ## 🚀 Funcionalidades Principais
