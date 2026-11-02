@@ -67,8 +67,8 @@ yolo_counter-platform/
 │   ├── counting_logs/         # Logs JSON de contagem
 │   └── models/
 ├── scripts/                   # Utilitários e inicialização
-│   ├── create_superuser.py    # Script de criação de admin
-│   └── seed_user.py
+│   └── seed_demo.py           # Dados fictícios para demo
+├── create_superuser.py        # Cria admin a partir do .env
 ├── static/                    # Arquivos estáticos (CSS, JS)
 ├── staticfiles/               # Arquivos estáticos compilados
 ├── webrtc_server.py           # Servidor WebRTC standalone
@@ -110,7 +110,7 @@ make logs
 
 ```bash
 # Configure o arquivo .env (copie de exemplo se existir)
-cp .env.example .env  # ou edite manualmente
+cp .env.example .env  # e troque SECRET_KEY e a senha do admin
 
 # Escolha a composição correta:
 # Para NVIDIA Jetson (GPU):
@@ -123,7 +123,7 @@ docker-compose -f docker-compose.x86.yml up -d --build
 docker-compose exec app python manage.py migrate
 
 # Crie superusuário (ou use script)
-docker-compose exec app python scripts/create_superuser.py
+docker-compose exec app python create_superuser.py
 ```
 
 ## 🌐 Acesso à Aplicação
@@ -135,9 +135,7 @@ docker-compose exec app python scripts/create_superuser.py
 | **API REST** | `http://localhost:5050/api` | Endpoints da API |
 | **WebRTC** | `ws://localhost:8888` | Streaming de vídeo em tempo real |
 
-**Credenciais Padrão:**
-- Usuário: `user_counter`
-- Senha: Definida durante `create_superuser.py`
+**Credenciais:** definidas por `DJANGO_SUPERUSER_EMAIL` e `DJANGO_SUPERUSER_PASSWORD` no `.env`.
 
 ## ⚙️ Configuração
 
@@ -155,7 +153,12 @@ DB_PORT=3306
 # Segurança
 SECRET_KEY=sua-chave-secreta-aqui
 DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.100
+ALLOWED_HOSTS=localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://localhost:5050,http://127.0.0.1:5050
+
+# Admin (create_superuser.py)
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+DJANGO_SUPERUSER_PASSWORD=...
 
 # Autenticação Social (opcional)
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=...
@@ -312,9 +315,13 @@ docker-compose exec app python manage.py test
 - Validar todas as URLs RTSP
 - Usar firewall e VPN para acesso remoto
 
+## 📌 Origem
+
+Projeto pessoal, reimplementado a partir da minha experiência com contagem por visão computacional. Usa apenas os pesos oficiais da Ultralytics e vídeos públicos de licença aberta (ex.: Pexels).
+
 ## 📄 Licença
 
-Proprietário - Tarslabs
+MIT — veja [LICENSE](LICENSE).
 
 ## 👥 Suporte
 

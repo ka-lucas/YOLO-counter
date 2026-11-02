@@ -5,29 +5,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PigVision OS - Login</title>
-  <link rel="stylesheet" href="{% static 'css/login/login.css' %}">
+  <title>Yolo Counter OS - Login</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/login/login.css' %}?v=3">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
 
+  <div class="login-page">
+
+  <!-- Painel visual -->
+  <aside class="visual-panel">
+    <div class="brand">
+      <img src="{% static 'icons/icon.svg' %}" width="36" height="36" alt="">
+      Yolo Counter
+    </div>
+
+    <div>
+      <span class="live-pill">Detecção em tempo real</span>
+      <h2>Contagem inteligente de animais com visão computacional</h2>
+      <ul class="features">
+        <li><i class="fas fa-crosshairs"></i> Detecção com YOLOv8 direto da câmera</li>
+        <li><i class="fas fa-arrows-up-down"></i> Contagem de entradas e saídas por linha virtual</li>
+        <li><i class="fas fa-clipboard-list"></i> Histórico por lote, câmera e destinatário</li>
+      </ul>
+    </div>
+  </aside>
+
   <!-- Formulário de Login -->
-  <div class="login-container">
+  <main class="form-panel">
     <div class="login-card">
-      <div class="logo-container">
-        <div class="logo">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-          </svg>
-        </div>
+      <div class="mobile-brand">
+        <img src="{% static 'icons/icon.svg' %}" width="32" height="32" alt="">
+        Yolo Counter
       </div>
 
-      <h1 class="logo-text">PigVision OS</h1>
-      <p class="logo-subtitle">Sistema de Contagem Inteligente</p>
+      <h1>Entrar</h1>
+      <p class="subtitle">Acesse o painel de contagem</p>
 
       <!-- Mensagens Django -->
       {% if messages %}
@@ -55,9 +70,7 @@
         </a>
       </div>
 
-      <div class="divider">
-        <span>ou</span>
-      </div>
+      <div class="divider">ou</div>
 
       <!-- LOGIN TRADICIONAL -->
       <form method="post" action="{% url 'login' %}">
@@ -106,8 +119,10 @@
         <button type="submit" class="btn-login">Entrar</button>
       </form>
 
-      <p class="footer-text">v2.1.0 • Powered by Jetson Nano</p>
+      <p class="footer-text">Edge AI · YOLOv8 · Jetson Nano</p>
     </div>
+  </main>
+
   </div>
 
   <script>

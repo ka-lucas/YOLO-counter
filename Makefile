@@ -1,4 +1,4 @@
-# Makefile for Oink Platform
+# Makefile for YOLO Counter
 # Auto-detects architecture (x86_64 or arm64/aarch64) to select the correct docker-compose file.
 
 ARCH := $(shell uname -m)
@@ -15,7 +15,7 @@ endif
 .PHONY: help build run stop logs clean info
 
 help:
-	@echo "Oink Platform Makefile"
+	@echo "YOLO Counter Makefile"
 	@echo "Detected Architecture: $(ARCH)"
 	@echo "Using: $(COMPOSE_FILE)"
 	@echo ""
@@ -43,8 +43,8 @@ run:
 	docker-compose -f $(COMPOSE_FILE) up -d
 	@echo "Running migrations..."
 	docker-compose -f $(COMPOSE_FILE) exec -T app python manage.py migrate
-	@echo "Creating superuser (gaspar)..."
-	docker-compose -f $(COMPOSE_FILE) exec -T app python scripts/create_superuser.py
+	@echo "Creating superuser (DJANGO_SUPERUSER_EMAIL)..."
+	docker-compose -f $(COMPOSE_FILE) exec -T app python create_superuser.py
 
 stop:
 	@echo "Stopping services..."

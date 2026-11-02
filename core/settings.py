@@ -22,18 +22,9 @@ sys.path.append(str(BASE_DIR / "apps"))
 # SEGURANÇA
 # =====================================================
 
-SECRET_KEY = "django-insecure-mm6!knxfr)t5*dlx1bh$yym9&rbekztoxgkat40yfns6(%+e5q"
+SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = True
-ALLOWED_HOSTS = [
-    "oink.tarslabs.io",
-    "100.112.197.98",
-    "82.25.75.199",
-    '100.112.146.92',
-    "localhost",
-    "127.0.0.1",
-    "192.168.0.43",
-    "100.93.97.65"
-]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # =====================================================
 # APLICAÇÕES
@@ -123,7 +114,7 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DB_NAME", "oink"), 
+        "NAME": os.getenv("DB_NAME", "yolo_counter.sqlite3"),
         "USER": os.getenv("DB_USER", ""),
         "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", ""),
@@ -136,13 +127,9 @@ DATABASES = {
 # USUÁRIO CUSTOMIZADO
 # =====================================================
 
-# CSRF_TRUSTED_ORIGINS = ["https://oink.tarslabs.io", "http://127.0.0.1:8000"]
-CSRF_TRUSTED_ORIGINS = [
-    'http://100.112.146.92:5050',
-    'http://localhost:5050',
-    'http://127.0.0.1:5050',
-    'https://oink.tarslabs.io'
-]
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    "CSRF_TRUSTED_ORIGINS", "http://localhost:5050,http://127.0.0.1:5050"
+).split(",")
 
 SESSION_COOKIE_SECURE = False  # True apenas com HTTPS
 CSRF_COOKIE_SECURE = False  # True apenas com HTTPS

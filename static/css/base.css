@@ -67,42 +67,6 @@ body {
   gap: 12px;
 }
 
-/* Animação de fundo sutil */
-.sidebar-header::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(78, 205, 196, 0.05) 0%, transparent 70%);
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate(-20px, -20px) rotate(180deg);
-  }
-}
-
-.logo-circle {
-  width: 32px;
-  height: 32px;
-  background: var(--primary-color);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 18px;
-  position: relative;
-  z-index: 1;
-}
-
 .sidebar-header h4 {
   margin: 0;
   font-size: 18px;
@@ -110,27 +74,6 @@ body {
   color: var(--text-primary);
   position: relative;
   z-index: 1;
-}
-
-/* Efeito sutil de brilho no texto */
-.sidebar-header h4::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 200%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  top: 0;
-  left: -100%;
-  animation: shine 3s ease-in-out infinite;
-}
-
-@keyframes shine {
-  0%, 100% {
-    left: -100%;
-  }
-  50% {
-    left: 100%;
-  }
 }
 
 .sidebar-subtitle {

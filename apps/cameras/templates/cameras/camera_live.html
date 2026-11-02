@@ -42,7 +42,10 @@
     <!-- Video Card -->
     <div class="card shadow-sm mx-auto" style="max-width: 800px;">
       <div class="ratio ratio-16x9 bg-black rounded">
-        {% if 'http' in rtsp_url and 'rtsp' not in rtsp_url %}
+        {% if rtsp_url|lower|slice:"-4:" == ".mp4" %}
+          <!-- Arquivo de vídeo (reprodução simples, sem detecção) -->
+          <video id="video" src="{{ rtsp_url }}" autoplay loop muted playsinline class="w-100 h-100" style="object-fit: contain;"></video>
+        {% elif 'http' in rtsp_url and 'rtsp' not in rtsp_url %}
           <!-- Câmera HTTP/MJPEG -->
           <img id="mjpegStream" src="{{ rtsp_url }}" class="w-100 h-100" style="object-fit: contain;" alt="Stream MJPEG" />
         {% else %}
@@ -70,8 +73,23 @@
   const rtspUrl = "{{ rtsp_url|escapejs }}";
   const statusEl = document.getElementById("status");
   
-  // Verifica se é HTTP/MJPEG ou RTSP
-  if (rtspUrl.startsWith('http') && !rtspUrl.startsWith('rtsp')) {
+  // Verifica se é arquivo de vídeo, HTTP/MJPEG ou RTSP
+  if (rtspUrl.toLowerCase().endsWith('.mp4')) {
+    const video = document.getElementById('video');
+    video.onplaying = () => {
+      statusEl.innerHTML = `
+        <span class="text-success">
+          <i class="bi bi-broadcast"></i> Transmissão ao vivo
+        </span>`;
+    };
+    video.onerror = () => {
+      statusEl.innerHTML = `
+        <span class="text-danger">
+          <i class="bi bi-x-circle"></i> Erro ao carregar vídeo
+        </span>`;
+    };
+
+  } else if (rtspUrl.startsWith('http') && !rtspUrl.startsWith('rtsp')) {
     // Câmera HTTP/MJPEG
     const img = document.getElementById('mjpegStream');
     

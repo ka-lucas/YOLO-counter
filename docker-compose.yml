@@ -3,7 +3,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: oink_plataform
+    container_name: yolo_counter
     runtime: nvidia  # Habilitar GPU
     ports:
       - "5050:8000"
@@ -28,7 +28,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: oink_webrtc
+    container_name: yolo_counter_webrtc
     runtime: nvidia
     ports:
       - "8888:8080"

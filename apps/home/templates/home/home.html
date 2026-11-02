@@ -2,494 +2,337 @@
 
 {% block page_title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+  .dash { --ink: #1d2935; --teal: #4ECDC4; --teal-dark: #2fb3aa; --muted: #6b7785; --line: #e7ebef; }
+  .dash .card { border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .dash .card:hover { transform: none; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+  .dash .card-body { padding: 20px; }
+  .card-title { font-size: 15px; font-weight: 600; margin: 0; color: var(--ink); }
+  .card-sub { font-size: 13px; color: var(--muted); }
+
+  /* KPIs */
+  .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .kpi-value { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; color: var(--ink); margin: 6px 0 10px; }
+  .kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; }
+  .kpi-icon svg { width: 22px; height: 22px; }
+  .kpi-icon.teal { background: #e6f7f6; color: var(--teal-dark); }
+  .kpi-icon.green { background: #e8f7ee; color: #16a34a; }
+  .kpi-icon.amber { background: #fdf3e3; color: #d97706; }
+  .kpi-accent { position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px; border-radius: 0 3px 3px 0; }
+  .trend-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .trend-pill.up { background: #e8f7ee; color: #15803d; }
+  .trend-pill.down { background: #fdecec; color: #b91c1c; }
+
+  /* Visão ao vivo */
+  .live-frame { position: relative; border-radius: 12px; overflow: hidden; background: #17212b; aspect-ratio: 16 / 10; }
+  .live-frame video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .live-frame .shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 30%, transparent 60%, rgba(0,0,0,.6) 100%); }
+  .live-frame .top { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; background: rgba(0,0,0,.5); color: #fff; }
+  .rec-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .04em; background: #fdecec; color: #dc2626; }
+  .rec-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #dc2626; }
+  .live-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: rgba(255,255,255,.85); text-align: center; padding: 16px; }
+  .live-empty svg { width: 40px; height: 40px; opacity: .7; }
+
+  /* Status do dispositivo */
+  .stat { margin-bottom: 16px; }
+  .stat:last-child { margin-bottom: 0; }
+  .stat-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 6px; }
+  .stat-head .k { display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 500; }
+  .stat-head .k svg { width: 16px; height: 16px; color: var(--muted); }
+  .stat-head .v { font-weight: 600; color: var(--ink); }
+  .dash .progress { height: 8px; border-radius: 999px; background: #eef1f4; }
+  .dash .progress-bar { border-radius: 999px; }
+  .bar-ok { background: var(--teal); }
+  .bar-info { background: #38bdf8; }
+  .bar-warn { background: #f59e0b; }
+  .bar-danger { background: #ef4444; }
+
+  /* Alertas */
+  .alert-item { display: flex; gap: 12px; padding: 12px 0; }
+  .alert-item + .alert-item { border-top: 1px solid var(--line); }
+  .alert-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+  .alert-icon.warn { background: #fdf3e3; color: #d97706; }
+  .alert-icon.ok { background: #e8f7ee; color: #16a34a; }
+  .alert-icon.danger { background: #fdecec; color: #dc2626; }
+  .alert-text { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .count-badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e6f7f6; color: var(--teal-dark); }
+</style>
+{% endblock %}
+
 {% block content %}
 {% load static %}
+<div class="dash">
 
-<div class="mb-3">
-  <h2 class="mb-0">Dashboard</h2>
-  <p class="text-muted">Monitoramento em tempo real</p>
+<div class="mb-4">
+  <h2 class="mb-0">Visão Geral</h2>
+  <p class="text-muted mb-0">Monitoramento em tempo real</p>
 </div>
 
 <!-- CARDS PRINCIPAIS -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          <small class="text-muted">Total de Suínos Detectados Hoje</small>
-          <h3 class="mb-0">{{ today_detected }}</h3>
-          <small class="{% if detected_change >= 0 %}text-success{% else %}text-danger{% endif %}">
-            {% if detected_change >= 0 %}↑{% else %}↓{% endif %} {{ detected_change|floatformat:0 }}% comparado a ontem
-          </small>
-        </div>
-        <div class="icon-circle bg-success text-white">
-          <i data-lucide="activity"></i>
-        </div>
+    <div class="card h-100 position-relative"><div class="card-body">
+      <span class="kpi-accent" style="background: var(--teal);"></span>
+      <div class="d-flex justify-content-between align-items-start">
+        <span class="kpi-label">Total de Detecções Hoje</span>
+        <span class="kpi-icon teal"><i data-lucide="activity"></i></span>
       </div>
-    </div>
+      <div class="kpi-value">{{ today_detected }}</div>
+      <span class="trend-pill {% if detected_change >= 0 %}up{% else %}down{% endif %}">
+        {% if detected_change >= 0 %}↑{% else %}↓{% endif %} {{ detected_change|floatformat:0 }}% comparado a ontem
+      </span>
+    </div></div>
   </div>
 
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <small class="text-muted">Entradas</small>
-        <h3 class="mb-0">{{ today_in }}</h3>
-        <small class="{% if in_change >= 0 %}text-success{% else %}text-danger{% endif %}">
-          {% if in_change >= 0 %}↑{% else %}↓{% endif %} {{ in_change|floatformat:0 }}%
-        </small>
+    <div class="card h-100 position-relative"><div class="card-body">
+      <span class="kpi-accent" style="background: #22c55e;"></span>
+      <div class="d-flex justify-content-between align-items-start">
+        <span class="kpi-label">Entradas</span>
+        <span class="kpi-icon green"><i data-lucide="log-in"></i></span>
       </div>
-    </div>
+      <div class="kpi-value">{{ today_in }}</div>
+      <span class="trend-pill {% if in_change >= 0 %}up{% else %}down{% endif %}">
+        {% if in_change >= 0 %}↑{% else %}↓{% endif %} {{ in_change|floatformat:0 }}%
+      </span>
+    </div></div>
   </div>
 
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <small class="text-muted">Saídas</small>
-        <h3 class="mb-0">{{ today_out }}</h3>
-        <small class="{% if out_change >= 0 %}text-success{% else %}text-danger{% endif %}">
-          {% if out_change >= 0 %}↑{% else %}↓{% endif %} {{ out_change|floatformat:0 }}%
-        </small>
+    <div class="card h-100 position-relative"><div class="card-body">
+      <span class="kpi-accent" style="background: #f59e0b;"></span>
+      <div class="d-flex justify-content-between align-items-start">
+        <span class="kpi-label">Saídas</span>
+        <span class="kpi-icon amber"><i data-lucide="log-out"></i></span>
       </div>
-    </div>
+      <div class="kpi-value">{{ today_out }}</div>
+      <span class="trend-pill {% if out_change >= 0 %}up{% else %}down{% endif %}">
+        {% if out_change >= 0 %}↑{% else %}↓{% endif %} {{ out_change|floatformat:0 }}%
+      </span>
+    </div></div>
   </div>
 </div>
 
 <!-- GRÁFICO + VÍDEO -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
   <div class="col-lg-8">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <div class="mb-3">
-          <h5 class="mb-0">Evolução das Contagens</h5>
-          <small class="text-muted">Últimos 7 dias - Entradas vs Saídas vs Saldo</small>
-        </div>
-        <div style="height: 300px;">
-          <canvas id="movementChart"></canvas>
-        </div>
+    <div class="card h-100"><div class="card-body">
+      <div class="mb-3">
+        <h5 class="card-title">Evolução das Contagens</h5>
+        <span class="card-sub">Últimos 7 dias - Entradas vs Saídas vs Saldo</span>
       </div>
-    </div>
+      <div style="height: 300px;">
+        <canvas id="movementChart"></canvas>
+      </div>
+    </div></div>
   </div>
 
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Visão ao Vivo</h6>
-          <span class="badge bg-danger">REC</span>
-        </div>
-
-        <div class="video-container mb-3 position-relative">
-          <div class="w-100 rounded bg-dark d-flex align-items-center justify-content-center" style="height: 200px;">
-            <div class="text-white text-center">
-              <i data-lucide="camera-off" class="mb-2" style="width: 48px; height: 48px;"></i>
-              <p class="mb-0">Nenhuma câmera disponível</p>
-              <small class="text-muted">Cadastre uma câmera nas configurações</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex gap-2">
-          <a href="{% url 'cameras:create' %}" class="btn btn-primary w-100">
-            <i data-lucide="plus"></i>
-            Adicionar Câmera
-          </a>
-        </div>
+    <div class="card h-100"><div class="card-body d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title">Visão ao Vivo</h5>
+        <span class="rec-badge">REC</span>
       </div>
-    </div>
+
+      <div class="live-frame mb-3">
+        {% if preview_camera %}
+          <video src="{{ preview_camera.primary_url }}" autoplay loop muted playsinline></video>
+          <div class="shade"></div>
+          <div class="top">
+            <span class="chip">{{ preview_camera.name }}</span>
+            <span class="chip" id="liveClock">--:--:--</span>
+          </div>
+        {% else %}
+          <div class="live-empty h-100">
+            <i data-lucide="camera-off"></i>
+            <span>Nenhuma câmera disponível</span>
+            <small style="opacity: .6;">Cadastre uma câmera nas configurações</small>
+          </div>
+        {% endif %}
+      </div>
+
+      <a href="{% url 'cameras:create' %}" class="btn btn-primary w-100 mt-auto d-inline-flex align-items-center justify-content-center gap-2">
+        <i data-lucide="plus"></i>
+        Adicionar Câmera
+      </a>
+    </div></div>
   </div>
 </div>
 
-<!-- STATUS + ALERTAS -->
+<!-- STATUS + FLUXO + ALERTAS -->
 <div class="row g-3">
   <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <h6>Status do Dispositivo</h6>
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title mb-3">Status do Dispositivo</h5>
 
-        <div class="mb-3">
-          <small>{% if gpu_available %}GPU{% else %}CPU{% endif %}</small>
-          <div class="progress">
-            <div class="progress-bar {% if gpu_usage < 50 %}bg-success{% elif gpu_usage < 80 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ gpu_usage }}%"></div>
-          </div>
-          <small class="text-muted">{{ gpu_usage|floatformat:0 }}%</small>
+      <div class="stat">
+        <div class="stat-head">
+          <span class="k"><i data-lucide="cpu"></i> {% if gpu_available %}GPU{% else %}CPU{% endif %}</span>
+          <span class="v">{{ cpu_usage|floatformat:0 }}%</span>
         </div>
+        <div class="progress"><div class="progress-bar {% if cpu_usage < 50 %}bar-ok{% elif cpu_usage < 80 %}bar-warn{% else %}bar-danger{% endif %}" style="width: {{ cpu_usage|floatformat:0 }}%"></div></div>
+      </div>
 
-        <div class="mb-3">
-          <small>FPS Inferência</small>
-          <div class="progress">
-            <div class="progress-bar bg-info" style="width: 65%"></div>
-          </div>
-          <small class="text-muted">23 FPS</small>
+      <div class="stat">
+        <div class="stat-head">
+          <span class="k"><i data-lucide="gauge"></i> FPS Inferência</span>
+          <span class="v">23 FPS</span>
         </div>
+        <div class="progress"><div class="progress-bar bar-info" style="width: 65%"></div></div>
+      </div>
 
-        <div class="mb-3">
-          <small>Temperatura</small>
-          <div class="progress">
-            <div class="progress-bar {% if temp_usage < 60 %}bg-success{% elif temp_usage < 80 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ temp_usage }}%"></div>
-          </div>
-          <small class="text-muted">{{ temp_usage|floatformat:0 }}°C</small>
+      <div class="stat">
+        <div class="stat-head">
+          <span class="k"><i data-lucide="thermometer"></i> Temperatura</span>
+          <span class="v">{{ temp_usage|floatformat:0 }}°C</span>
         </div>
+        <div class="progress"><div class="progress-bar {% if temp_usage < 60 %}bar-ok{% elif temp_usage < 80 %}bar-warn{% else %}bar-danger{% endif %}" style="width: {{ temp_usage|floatformat:0 }}%"></div></div>
+      </div>
 
+      <div class="stat">
+        <div class="stat-head">
+          <span class="k"><i data-lucide="memory-stick"></i> Memória RAM</span>
+          <span class="v">{{ ram_usage|floatformat:0 }}%</span>
+        </div>
+        <div class="progress"><div class="progress-bar {% if ram_usage < 60 %}bar-ok{% elif ram_usage < 80 %}bar-warn{% else %}bar-danger{% endif %}" style="width: {{ ram_usage|floatformat:0 }}%"></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <h5 class="card-title">Fluxo por Minuto</h5>
+      <span class="card-sub">Últimos 10 minutos</span>
+      <div class="mt-3" style="height: 190px;">
+        <canvas id="minuteChart"></canvas>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="card-title">Alertas Inteligentes</h5>
+        <span class="count-badge">3 novos</span>
+      </div>
+
+      <div class="alert-item">
+        <span class="alert-icon warn"><i class="bi bi-exclamation-triangle-fill"></i></span>
         <div>
-          <small>Memória RAM</small>
-          <div class="progress">
-            <div class="progress-bar {% if ram_usage < 60 %}bg-primary{% elif ram_usage < 80 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ ram_usage }}%"></div>
-          </div>
-          <small class="text-muted">{{ ram_usage|floatformat:0 }}%</small>
+          <div class="alert-text">Câmera 02 com baixa luminosidade</div>
+          <small class="text-muted">há 5 min</small>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <h6>Fluxo por Minuto</h6>
-        <small class="text-muted">Últimos 10 minutos</small>
-        <div style="height: 160px;">
-          <canvas id="minuteChart"></canvas>
+      <div class="alert-item">
+        <span class="alert-icon ok"><i class="bi bi-check-circle-fill"></i></span>
+        <div>
+          <div class="alert-text">Modelo atualizado com sucesso</div>
+          <small class="text-muted">há 20 min</small>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="col-lg-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6>Alertas Inteligentes</h6>
-          <small class="text-muted">3 novos</small>
+      <div class="alert-item">
+        <span class="alert-icon danger"><i class="bi bi-exclamation-octagon-fill"></i></span>
+        <div>
+          <div class="alert-text">Movimentação anormal detectada</div>
+          <small class="text-muted">há 1 hora</small>
         </div>
-
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item">
-            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-            Câmera 02 com baixa luminosidade<br>
-            <small class="text-muted">há 5 min</small>
-          </li>
-
-          <li class="list-group-item">
-            <i class="bi bi-check-circle-fill text-success me-1"></i>
-            Modelo atualizado com sucesso<br>
-            <small class="text-muted">há 20 min</small>
-          </li>
-
-          <li class="list-group-item">
-            <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>
-            Movimentação anormal detectada<br>
-            <small class="text-muted">há 1 hora</small>
-          </li>
-        </ul>
-
       </div>
-    </div>
+    </div></div>
   </div>
 </div>
 
 </div>
+{{ daily_data|json_script:"daily-data" }}
+{{ minute_data|json_script:"minute-data" }}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  let movementChart = null;
-  let minuteChart = null;
+  const daily = JSON.parse(document.getElementById("daily-data").textContent);
+  const minutes = JSON.parse(document.getElementById("minute-data").textContent);
+  const tick = { font: { size: 11 }, color: "#6b7785" };
+  const tooltip = { backgroundColor: "#1d2935", padding: 10, cornerRadius: 8 };
 
-  // Função para atualizar gráficos com dados em tempo real
-  function updateCharts() {
-    fetch('/video-ao-vivo/api/chart-data/')
-      .then(response => response.json())
-      .then(data => {
-        console.log('Dados recebidos:', data); // Debug
-        if (data.ok) {
-          updateMovementChart(data.hourly_data);
-          updateMinuteChart(data.minute_data);
-        } else {
-          console.error('Erro na resposta:', data.error);
-          initializeWithStaticData();
-        }
-      })
-      .catch(error => {
-        console.error('Erro ao buscar dados dos gráficos:', error);
-        initializeWithStaticData();
-      });
-  }
+  // ===== Evolução das Contagens =====
+  const movement = document.getElementById("movementChart");
+  const fill = movement.getContext("2d").createLinearGradient(0, 0, 0, 300);
+  fill.addColorStop(0, "rgba(78, 205, 196, 0.35)");
+  fill.addColorStop(1, "rgba(78, 205, 196, 0)");
+  const point = { pointRadius: 3, pointHoverRadius: 6, pointBorderColor: "#fff", pointBorderWidth: 2 };
 
-  // Função para inicializar com dados estáticos
-  function initializeWithStaticData() {
-    const staticHourlyData = [{% for hour_data in hourly_data %}{hour: "{{ hour_data.hour }}", in: {{ hour_data.in }}, out: {{ hour_data.out }}}{% if not forloop.last %},{% endif %}{% endfor %}];
-    const staticMinuteData = [{% for minute_val in minute_data %}{{ minute_val }}{% if not forloop.last %},{% endif %}{% endfor %}];
-    
-    console.log('Dados estáticos:', {hourly: staticHourlyData, minute: staticMinuteData}); // Debug
-    
-    updateMovementChart(staticHourlyData.length > 0 ? staticHourlyData : generateEmptyHourlyData());
-    updateMinuteChart(staticMinuteData.length > 0 ? staticMinuteData : [0,0,0,0,0,0,0,0,0,0]);
-  }
+  new Chart(movement, {
+    type: "line",
+    data: {
+      labels: daily.map(d => d.label),
+      datasets: [
+        { label: "Entradas", data: daily.map(d => d.in), borderColor: "#4ECDC4", backgroundColor: fill, fill: true, tension: 0.35, borderWidth: 3, pointBackgroundColor: "#4ECDC4", ...point },
+        { label: "Saídas", data: daily.map(d => d.out), borderColor: "#f59e0b", backgroundColor: "transparent", tension: 0.35, borderWidth: 2.5, pointBackgroundColor: "#f59e0b", ...point },
+        { label: "Saldo", data: daily.map(d => d.in - d.out), borderColor: "#1d2935", backgroundColor: "transparent", tension: 0.35, borderWidth: 2, borderDash: [6, 5], pointBackgroundColor: "#1d2935", ...point },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: "index" },
+      plugins: {
+        legend: { position: "top", align: "end", labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 7, boxHeight: 7, font: { size: 12 } } },
+        tooltip,
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: tick },
+        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, border: { display: false }, ticks: { ...tick, maxTicksLimit: 6 } },
+      },
+    },
+  });
 
-  // Função para gerar dados vazios por hora
-  function generateEmptyHourlyData() {
-    const data = [];
-    const now = new Date();
-    for (let i = 8; i >= 0; i--) {
-      const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
-      data.push({
-        hour: hour.getHours().toString().padStart(2, '0') + ':00',
-        in: 0,
-        out: 0
-      });
-    }
-    return data;
-  }
-
-  // Função para atualizar contadores em tempo real
-  function updateCounters() {
-    fetch('/video-ao-vivo/api/status/')
-      .then(response => response.json())
-      .then(data => {
-        if (data.running) {
-          // Atualizar cards com dados em tempo real
-          const totalDetected = data.in + data.out;
-          document.querySelector('h3').textContent = totalDetected;
-          document.querySelectorAll('h3')[1].textContent = data.in;
-          document.querySelectorAll('h3')[2].textContent = data.out;
-        }
-      })
-      .catch(error => {
-        console.error('Erro ao buscar status:', error);
-      });
-  }
-
-  // ===== Gráfico Fluxo por Hora =====
-  function updateMovementChart(hourlyData) {
-    const movementCtx = document.getElementById("movementChart");
-    if (!movementCtx) return;
-
-    // Garantir que sempre temos dados
-    const safeHourlyData = hourlyData && hourlyData.length > 0 ? hourlyData : generateEmptyHourlyData();
-    
-    const labels = safeHourlyData.map(d => d.hour);
-    const entriesData = safeHourlyData.map(d => d.in || 0);
-    const exitsData = safeHourlyData.map(d => d.out || 0);
-    
-    if (movementChart) {
-      movementChart.data.labels = labels;
-      movementChart.data.datasets[0].data = entriesData;
-      movementChart.data.datasets[1].data = exitsData;
-      movementChart.data.datasets[2].data = entriesData.map((entry, i) => entry - exitsData[i]);
-      movementChart.update('none');
-    } else {
-      movementChart = new Chart(movementCtx, {
-        type: "line",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Entradas",
-              data: entriesData,
-              borderColor: "#10b981",
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
-              tension: 0.4,
-              fill: true,
-              pointBackgroundColor: "#10b981",
-              pointBorderColor: "#ffffff",
-              pointBorderWidth: 2,
-              pointRadius: 6,
-              pointHoverRadius: 8
-            },
-            {
-              label: "Saídas",
-              data: exitsData,
-              borderColor: "#f59e0b",
-              backgroundColor: "rgba(245, 158, 11, 0.1)",
-              tension: 0.4,
-              fill: true,
-              pointBackgroundColor: "#f59e0b",
-              pointBorderColor: "#ffffff",
-              pointBorderWidth: 2,
-              pointRadius: 6,
-              pointHoverRadius: 8
-            },
-            {
-              label: "Saldo",
-              data: entriesData.map((entry, i) => entry - exitsData[i]),
-              borderColor: "#6366f1",
-              backgroundColor: "rgba(99, 102, 241, 0.1)",
-              tension: 0.4,
-              fill: false,
-              borderDash: [5, 5],
-              pointBackgroundColor: "#6366f1",
-              pointBorderColor: "#ffffff",
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
-            }
-          ],
+  // ===== Fluxo por Minuto =====
+  new Chart(document.getElementById("minuteChart"), {
+    type: "bar",
+    data: {
+      labels: ["10min", "9min", "8min", "7min", "6min", "5min", "4min", "3min", "2min", "1min"],
+      datasets: [{
+        label: "Detecções",
+        data: minutes,
+        backgroundColor: ctx => {
+          const v = ctx.parsed.y;
+          if (v === 0) return "#e5e9ee";
+          if (v <= 2) return "#4ECDC4";
+          if (v <= 5) return "#f59e0b";
+          return "#ef4444";
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            intersect: false,
-            mode: 'index'
+        borderRadius: 6,
+        maxBarThickness: 22,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...tooltip,
+          callbacks: {
+            title: c => c[0].label + " atrás",
+            label: c => c.parsed.y === 1 ? "1 detecção" : c.parsed.y + " detecções",
           },
-          plugins: {
-            legend: { 
-              display: true,
-              position: 'top',
-              labels: {
-                usePointStyle: true,
-                padding: 20,
-                font: {
-                  size: 12,
-                  weight: '500'
-                }
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: '#ffffff',
-              bodyColor: '#ffffff',
-              borderColor: '#374151',
-              borderWidth: 1,
-              cornerRadius: 8,
-              displayColors: true
-            }
-          },
-          scales: {
-            x: { 
-              grid: { display: false },
-              ticks: {
-                font: { size: 11 },
-                maxRotation: 0
-              }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1,
-                font: { size: 11 }
-              },
-              grid: { 
-                borderDash: [2, 2],
-                color: 'rgba(0, 0, 0, 0.1)'
-              }
-            },
-          },
-          elements: {
-            line: {
-              borderWidth: 3
-            }
-          }
         },
-      });
-    }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { ...tick, font: { size: 10 }, maxRotation: 0, autoSkip: true } },
+        y: { beginAtZero: true, suggestedMax: 5, grid: { color: "rgba(0,0,0,0.05)" }, border: { display: false }, ticks: { ...tick, font: { size: 10 }, precision: 0 } },
+      },
+    },
+  });
+
+  const clock = document.getElementById("liveClock");
+  if (clock) {
+    const update = () => clock.textContent = new Date().toLocaleTimeString("pt-BR");
+    update();
+    setInterval(update, 1000);
   }
-
-  // ===== Gráfico Fluxo por Minuto =====
-  function updateMinuteChart(minuteData) {
-    const minuteCtx = document.getElementById("minuteChart");
-    if (!minuteCtx) return;
-    
-    // Garantir que sempre temos dados
-    const safeMinuteData = minuteData && minuteData.length > 0 ? minuteData : [0,0,0,0,0,0,0,0,0,0];
-    
-    if (minuteChart) {
-      minuteChart.data.datasets[0].data = safeMinuteData;
-      minuteChart.update('none');
-    } else {
-      minuteChart = new Chart(minuteCtx, {
-        type: "bar",
-        data: {
-          labels: ["10min","9min","8min","7min","6min","5min","4min","3min","2min","1min"],
-          datasets: [{
-            label: "Detecções",
-            data: safeMinuteData,
-            backgroundColor: function(context) {
-              const value = context.parsed.y;
-              if (value === 0) return "#e5e7eb";
-              if (value <= 2) return "#10b981";
-              if (value <= 5) return "#f59e0b";
-              return "#ef4444";
-            },
-            borderColor: function(context) {
-              const value = context.parsed.y;
-              if (value === 0) return "#d1d5db";
-              if (value <= 2) return "#059669";
-              if (value <= 5) return "#d97706";
-              return "#dc2626";
-            },
-            borderWidth: 1,
-            borderRadius: 4,
-            borderSkipped: false,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: '#ffffff',
-              bodyColor: '#ffffff',
-              borderColor: '#374151',
-              borderWidth: 1,
-              cornerRadius: 6,
-              callbacks: {
-                title: function(context) {
-                  return context[0].label + ' atrás';
-                },
-                label: function(context) {
-                  const value = context.parsed.y;
-                  return value === 1 ? '1 detecção' : value + ' detecções';
-                }
-              }
-            }
-          },
-          scales: {
-            x: { 
-              grid: { display: false },
-              ticks: {
-                font: { size: 10 },
-                color: '#6b7280'
-              }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { 
-                display: true,
-                stepSize: 1,
-                font: { size: 10 },
-                color: '#6b7280'
-              },
-              grid: { 
-                display: true,
-                color: 'rgba(0, 0, 0, 0.05)',
-                borderDash: [2, 2]
-              },
-            },
-          },
-          interaction: {
-            intersect: false,
-            mode: 'index'
-          }
-        },
-      });
-    }
-  }
-
-  // Inicializar gráficos
-  initializeWithStaticData(); // Inicializar primeiro com dados estáticos
-  updateCharts(); // Depois tentar atualizar com dados dinâmicos
-  updateCounters();
-  
-  // Atualizar gráficos a cada 30 segundos
-  setInterval(updateCharts, 30000);
-  
-  // Atualizar contadores a cada 5 segundos
-  setInterval(updateCounters, 5000);
-
 });
 </script>
-
 {% endblock %}
