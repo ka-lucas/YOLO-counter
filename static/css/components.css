@@ -50,7 +50,7 @@
    BADGES
 ============================== */
 .badge-id {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
   color: #ffffff;
   padding: 4px 10px;
   border-radius: 999px;
@@ -59,13 +59,13 @@
 }
 
 .badge-type {
-  background: var(--primary-light);
-  color: var(--primary-dark);
+  background: rgba(99, 102, 241, 0.1);
+  color: #4F46E5;
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 0.8em;
   font-weight: 500;
-  border: 1px solid var(--primary-light);
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .badge-recorrente-sim {
@@ -119,7 +119,7 @@
   background: #ffffff;
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid #6366F1;
   box-shadow: none;
 }
 
@@ -127,47 +127,49 @@
    BOTÕES
 ============================== */
 .btn-primary {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
   border: none;
   color: #ffffff;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
   transform: translateY(-1px);
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .btn-gradient-blue {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
   border: none;
   color: #ffffff;
 }
 
 .btn-gradient-blue:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
   transform: translateY(-1px);
   color: #ffffff;
 }
 
 .btn-outline-primary {
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
+  border: 1px solid #6366F1;
+  color: #6366F1;
   background: transparent;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
 .btn-outline-primary:hover {
-  background: var(--primary-color);
+  background: #6366F1;
   color: #ffffff;
   transform: translateY(-1px);
 }
 
 .btn-outline-primary.btn-filter:hover {
-  background: var(--sidebar-hover);
-  color: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background: #F1F5F9;
+  color: #4F46E5;
+  border-color: #4F46E5;
 }
 
 .btn-secondary {

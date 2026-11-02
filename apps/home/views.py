@@ -1,7 +1,16 @@
-from django.shortcuts import render
+from datetime import datetime, timedelta
+import os
+import json
+
+import psutil
+import torch
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
-from django.contrib import messages
+from django.db.models import Count, Sum
+from django.shortcuts import render
+
+from apps.cameras.models import Camera
 from apps.video_ao_vivo.models import CountingSession
 from apps.cameras.models import Camera
 from django.db.models import Sum, Count
@@ -18,7 +27,7 @@ class EmailLoginView(LoginView):
     redirect_authenticated_user = True
 
     def form_invalid(self, form):
-        messages.error(self.request, "Email ou senha inválidos.")
+        messages.error(self.request, "Email ou senha invalidos.")
         return super().form_invalid(form)
 
 
