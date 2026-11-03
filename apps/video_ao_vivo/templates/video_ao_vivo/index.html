@@ -49,6 +49,21 @@
           {% endfor %}
         </select>
         <button id="btnSelectCamera" class="btn btn-primary mt-3" disabled>Continuar</button>
+
+        <!-- UPLOAD DE VÍDEO -->
+        <div class="upload-block mt-4">
+          <h3>Ou envie um vídeo</h3>
+          {% csrf_token %}
+          <input type="file" id="videoFile" class="form-control" accept=".mp4,.avi,.mov,.mkv,.webm">
+          <label for="uploadClass" class="form-label mt-2">O que contar</label>
+          <select id="uploadClass" class="form-control">
+            {% for id, name in yolo_classes %}
+            <option value="{{ id }}" {% if id == 19 %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          <button id="btnUpload" class="btn btn-primary mt-3" disabled>Enviar vídeo</button>
+          <small id="uploadStatus" class="text-muted d-block mt-2"></small>
+        </div>
       </div>
 
       <!-- CONFIGURAÇÃO DA LINHA -->
@@ -73,13 +88,16 @@
       <div id="countingActive" style="display:none;">
         <div class="video-top">
           <span class="badge" id="cameraNameActive">Câmera</span>
-          <span class="badge success">CONTANDO</span>
+          <span class="badge success" id="statusBadge">CONTANDO</span>
+          <span class="badge" id="positionInfo"></span>
         </div>
-        
-        <!-- Vídeo para debug 
+
+        <!-- Stream processado: ao pausar, congela no quadro exato onde a contagem parou -->
         <div class="video-canvas mb-3" style="position: relative;">
           <img id="liveStream" class="live-video-player" alt="Stream da câmera" style="width: 100%; height: auto; max-height: 400px; object-fit: contain;" />
-        </div>-->
+        </div>
+
+        <div id="pauseInfo" class="pause-info" style="display:none;"></div>
         
         <div class="counter-display">
           <div class="counter-item">
@@ -171,6 +189,7 @@
 {% block extra_js %}
 <script>
   window.VIDEO_AO_VIVO_URLS = {
+    upload: "{% url 'video_ao_vivo:upload' %}",
     start:  "{% url 'video_ao_vivo:start' %}",
     pause:  "{% url 'video_ao_vivo:pause' %}",
     resume: "{% url 'video_ao_vivo:resume' %}",

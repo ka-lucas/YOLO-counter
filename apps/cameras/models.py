@@ -4,6 +4,9 @@ from django.conf import settings
 
 
 class Camera(models.Model):
+    # Câmeras criadas por upload de vídeo: ficam inativas e fora das listas de câmeras
+    UPLOAD_LOCATION = "Upload de vídeo"
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cameras')
     name = models.CharField(max_length=100)
 

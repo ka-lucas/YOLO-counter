@@ -8,7 +8,7 @@ from .forms import CameraForm
 @login_required
 def camera_list(request):
     """Lista todas as câmeras do usuário"""
-    cameras = Camera.objects.filter(user=request.user)
+    cameras = Camera.objects.filter(user=request.user).exclude(location=Camera.UPLOAD_LOCATION)
     return render(request, "configuracao/index.html", {"cameras": cameras})
 
 

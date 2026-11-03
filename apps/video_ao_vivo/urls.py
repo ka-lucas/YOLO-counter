@@ -6,6 +6,7 @@ app_name = "video_ao_vivo"
 urlpatterns = [
     path("", views.live_page, name="index"),
     path("live/", views.live_page, name="live"),
+    path("api/upload/", views.api_upload, name="upload"),
     path("api/start/", views.api_start, name="start"),
     path("api/pause/", views.api_pause, name="pause"),
     path("api/resume/", views.api_resume, name="resume"),
