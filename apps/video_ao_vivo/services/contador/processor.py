@@ -30,14 +30,19 @@ except ImportError:
     YOLO = None
     signal.signal = original_signal
 
+def fmt_time(seconds: float) -> str:
+    return f"{int(seconds // 60):02d}:{seconds % 60:05.2f}"
+
+
 class VideoCounterProcessor:
     """
     Conta IN/OUT quando o centroide do objeto cruza uma linha horizontal.
     Usa YOLO + tracking (ByteTrack) para manter IDs.
     """
 
-    def __init__(self, video_path: str, config, camera=None):
+    def __init__(self, video_path: str, config, camera=None, loop: bool = True):
         self.video_path = str(video_path)
+        self.loop = loop  # False para vídeo enviado: termina no último quadro em vez de recomeçar
         self.config = config
         self.camera = camera  # Referência da câmera
 
@@ -45,7 +50,17 @@ class VideoCounterProcessor:
         self.is_paused = False
 
         self.latest_jpeg = None
+        self.jpeg_seq = 0  # incrementa a cada JPEG novo; o stream só envia quando muda
         self.counts = {"in": 0, "out": 0}
+
+        # posição do último quadro processado (é o que os contadores refletem)
+        self.frame_pos = 0
+        self.pos_s = 0.0
+        self.total_frames = 0
+        self.finished = False
+        self.paused_at = None  # posição/contagem exatas onde a contagem parou
+        self._paused_evt = threading.Event()
+        self._last_frame = None
 
         self._thread = None
         self._lock = threading.Lock()
@@ -92,10 +107,22 @@ class VideoCounterProcessor:
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
-    def pause(self):
-        self.is_paused = True
+    def pause(self, timeout: float = 2.0):
+        """Pausa e espera o loop confirmar, devolvendo o quadro exato onde parou.
+
+        O navegador mostra o vídeo com atraso; o quadro devolvido aqui (e congelado
+        no stream) é o último que de fato entrou na contagem.
+        """
+        if not self.is_paused:
+            self._paused_evt.clear()
+            self.is_paused = True
+        self._paused_evt.wait(timeout)
+        return self.paused_at
 
     def resume(self):
+        if self.finished:
+            return
+        self.paused_at = None
         self.is_paused = False
 
     def stop(self):
@@ -103,11 +130,34 @@ class VideoCounterProcessor:
         if self.cap:
             self.cap.release()
 
+    def _publish(self, frame):
+        ok, jpg = cv2.imencode(".jpg", frame)
+        if ok:
+            self.latest_jpeg = jpg.tobytes()
+            self.jpeg_seq += 1
+
+    def position(self):
+        return {"frame": self.frame_pos, "time": fmt_time(self.pos_s), "seconds": round(self.pos_s, 2)}
+
+    def _mark(self, label: str):
+        """Congela o último quadro processado com a marca de onde a contagem parou."""
+        info = {**self.position(), "in": self.counts["in"], "out": self.counts["out"]}
+        if self._last_frame is not None:
+            frame = self._last_frame.copy()
+            h, w = frame.shape[:2]
+            cv2.rectangle(frame, (0, h - 44), (w, h), (0, 0, 0), -1)
+            cv2.putText(frame, f"{label} - quadro {info['frame']} - {info['time']}",
+                        (10, h - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 200, 255), 2)
+            self._publish(frame)
+        return info
+
     def _side(self, cy: float, line_y: float) -> int:
         # -1 acima, +1 abaixo
         return -1 if cy < line_y else 1
 
     def _loop(self):
+        from .manager import counter_manager
+
         # Verificar se YOLO está disponível
         if YOLO is None:
             print("YOLO não disponível")
@@ -130,17 +180,36 @@ class VideoCounterProcessor:
             return
 
         self.fps = float(self.cap.get(cv2.CAP_PROP_FPS) or 30.0)
+        self.total_frames = max(0, int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0))
+        t0 = time.time()
 
         while self.is_running:
             if self.is_paused:
+                if not self._paused_evt.is_set():
+                    self.paused_at = self._mark("PAUSADO")
+                    self._paused_evt.set()
                 time.sleep(0.05)
                 continue
 
             ok, frame = self.cap.read()
             if not ok:
-                # loop no vídeo (teste)
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                if self.loop:
+                    self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+                self.finished = True
+                self.paused_at = self._mark("FIM DO VIDEO")
+                self._paused_evt.set()
+                self.is_paused = True
                 continue
+
+            # arquivo: posição pelo índice do quadro; stream ao vivo: tempo decorrido
+            pos = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+            if self.total_frames > 0 and pos > 0:
+                self.frame_pos = int(pos)
+                self.pos_s = (self.frame_pos - 1) / max(self.fps, 1.0)
+            else:
+                self.frame_pos += 1
+                self.pos_s = time.time() - t0
 
             if self.resize_scale != 1.0:
                 frame = cv2.resize(frame, None, fx=self.resize_scale, fy=self.resize_scale)
@@ -231,7 +300,6 @@ class VideoCounterProcessor:
                         if prev_side == -1 and curr_side == 1:
                             self.counts["out"] += 1
                             print(f"OUT: ID {tid} cruzou linha (cima->baixo) - Total OUT: {self.counts['out']}")
-                            from .manager import counter_manager
                             counter_manager.add_event("OUT", -1, track_id=tid)      
                         elif prev_side == 1 and curr_side == -1:
                             self.counts["in"] += 1
@@ -239,11 +307,6 @@ class VideoCounterProcessor:
                             counter_manager.add_event("IN", +1, track_id=tid)
 
                         self._counted_recently[tid] = self._cooldown_frames
-                
-                # TESTE: Incrementar contador a cada 60 frames para testar comunicação
-                if self._frame_idx % 60 == 0:
-                    self.counts["in"] += 1
-                    print(f"TESTE: Incrementando IN para testar - Total: {self.counts['in']}")
 
             # escreve contadores no frame
             class_name = ""
@@ -259,9 +322,10 @@ class VideoCounterProcessor:
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255,255,255), 2)
             cv2.putText(frame, debug_info,
                         (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,0), 2)
+            cv2.putText(frame, f"quadro {self.frame_pos} | {fmt_time(self.pos_s)}",
+                        (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
 
-            ok2, jpg = cv2.imencode(".jpg", frame)
-            if ok2:
-                self.latest_jpeg = jpg.tobytes()
+            self._last_frame = frame
+            self._publish(frame)
 
             time.sleep(1.0 / max(self.fps, 1.0))

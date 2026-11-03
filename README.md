@@ -8,6 +8,8 @@ O projeto inclui:
 
 - dashboard web com metricas operacionais
 - modulo de video ao vivo para iniciar, pausar, retomar e encerrar contagens
+- upload de video (mp4, avi, mov, mkv, webm) para contar a partir de um arquivo, alem de cameras ao vivo
+- pausa exata: o video congela no quadro onde a contagem parou, com quadro, tempo e totais
 - cadastro de cameras RTSP ou HTTP/MJPEG por usuario
 - configuracao e ativacao de modelos `.pt`
 - historico de sessoes de contagem

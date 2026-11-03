@@ -3,7 +3,11 @@
   
   // Estados
   let selectedCamera = null;
+  let selectedName = '';
+  let selectedClassName = '';
   let lineYNorm = 0.5;
+  let isPaused = false;
+  let isFinished = false;
 
   // Elementos DOM
   const cameraSelection = document.getElementById('cameraSelection');
@@ -84,6 +88,8 @@
     if (lineSetup) lineSetup.style.display = 'block';
     
     const selectedOption = cameraSelect.options[cameraSelect.selectedIndex];
+    selectedName = selectedOption.text.trim() || 'Câmera';
+    selectedClassName = selectedOption.getAttribute('data-detection-class') || '';
     console.log('selectedOption element:', selectedOption);
     console.log('selectedOption attributes:', {
       'data-detection-class': selectedOption.getAttribute('data-detection-class'),
@@ -193,10 +199,9 @@
         if (countingActive) countingActive.style.display = 'block';
         if (liveStatus) liveStatus.style.display = 'inline-block';
         
-        const selectedOption = cameraSelect.options[cameraSelect.selectedIndex];
-        const cameraNameText = selectedOption.text || selectedOption.getAttribute('data-name') || 'Câmera';
         const cameraNameActiveEl = document.getElementById('cameraNameActive');
-        if (cameraNameActiveEl) cameraNameActiveEl.textContent = cameraNameText;
+        if (cameraNameActiveEl) cameraNameActiveEl.textContent = selectedName;
+        renderState({ paused: false, finished: false });
         
         // Sempre usar stream MJPEG processado durante contagem
         const liveStreamEl = document.getElementById('liveStream');
@@ -304,33 +309,8 @@
           if (countInEl) countInEl.textContent = data.in || 0;
           if (countOutEl) countOutEl.textContent = data.out || 0;
           if (countBalanceEl) countBalanceEl.textContent = (data.in || 0) - (data.out || 0);
-          
-          // Atualizar botão pause/resume
-          if (btnPause) {
-            if (data.paused) {
-              btnPause.textContent = '▶ Retomar';
-              btnPause.onclick = async () => {
-                try {
-                  const response = await fetch(URLS.resume, { method: 'POST' });
-                  if (!response.ok) throw new Error('Erro ao retomar');
-                  console.log('Contagem retomada');
-                } catch (error) {
-                  alert('Erro ao retomar: ' + error.message);
-                }
-              };
-            } else {
-              btnPause.textContent = '⏸ Pausar';
-              btnPause.onclick = async () => {
-                try {
-                  const response = await fetch(URLS.pause, { method: 'POST' });
-                  if (!response.ok) throw new Error('Erro ao pausar');
-                  console.log('Contagem pausada');
-                } catch (error) {
-                  alert('Erro ao pausar: ' + error.message);
-                }
-              };
-            }
-          }
+
+          renderState(data);
         }
       } catch (e) {
         console.error('Erro no polling:', e);
@@ -338,21 +318,59 @@
     }, 1000);
   }
 
+  // Badge, posição e aviso de pausa. Pausado/fim mostra o quadro exato onde a contagem
+  // parou (o stream congela nele), não o ponto atrasado que o navegador exibia ao clicar.
+  function renderState(data) {
+    isPaused = !!data.paused;
+    isFinished = !!data.finished;
+    const badge = document.getElementById('statusBadge');
+    const pauseInfo = document.getElementById('pauseInfo');
+    const positionInfo = document.getElementById('positionInfo');
+    const p = data.paused_at;
+
+    if (badge) {
+      badge.textContent = isFinished ? 'CONCLUÍDO' : isPaused ? 'PAUSADO' : 'CONTANDO';
+      badge.className = 'badge ' + (isPaused ? 'warning' : 'success');
+    }
+    if (positionInfo && data.position) {
+      const total = data.total_frames ? ` / ${data.total_frames}` : '';
+      positionInfo.textContent = `quadro ${data.position.frame}${total} · ${data.position.time}`;
+    }
+    if (pauseInfo) {
+      if (isPaused && p) {
+        pauseInfo.textContent =
+          `${isFinished ? 'Vídeo concluído' : 'Contagem parada'} no quadro ${p.frame} (${p.time}). ` +
+          `Entradas: ${p.in} · Saídas: ${p.out}. A imagem acima é exatamente esse quadro.` +
+          (isFinished ? ' Clique em Parar para salvar.' : '');
+        pauseInfo.style.display = 'block';
+      } else {
+        pauseInfo.style.display = 'none';
+      }
+    }
+    if (btnPause) {
+      btnPause.textContent = isPaused ? '▶ Retomar' : '⏸ Pausar';
+      btnPause.disabled = isFinished;
+    }
+  }
+
   // Etapa 3: Controles
   if (btnPause) {
     btnPause.addEventListener('click', async () => {
+      const URLS = window.VIDEO_AO_VIVO_URLS || {};
+      const resuming = isPaused;
+      btnPause.disabled = true;
       try {
-        const URLS = window.VIDEO_AO_VIVO_URLS || {};
-        const response = await fetch(URLS.pause, { method: 'POST' });
+        const response = await fetch(resuming ? URLS.resume : URLS.pause, { method: 'POST' });
         const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Erro ao pausar');
-        }
-        
-        console.log('Contagem pausada');
+        if (!response.ok) throw new Error(data.error || 'Erro');
+
+        // a resposta do pause já traz o quadro exato; não espera o próximo polling
+        if (resuming) renderState({ paused: false });
+        else renderState({ paused: true, paused_at: data.paused_at, position: data.paused_at });
       } catch (error) {
-        alert('Erro ao pausar: ' + error.message);
+        alert((resuming ? 'Erro ao retomar: ' : 'Erro ao pausar: ') + error.message);
+      } finally {
+        btnPause.disabled = isFinished;
       }
     });
   }
@@ -362,14 +380,8 @@
       // Mostrar modal ao invés de parar diretamente
       const countingInfoModal = new bootstrap.Modal(document.getElementById('countingInfoModal'));
       
-      // Pré-preencher o tipo de animal baseado na câmera - usar somente detection_class_name
-      const selectedOption = cameraSelect.options[cameraSelect.selectedIndex];
-      const detectionClassName = selectedOption.dataset.detectionClass || selectedOption.getAttribute('data-detection-class') || '';
-      console.log('selectedOption:', selectedOption);
-      console.log('dataset.detectionClass:', selectedOption.dataset.detectionClass);
-      console.log('getAttribute(data-detection-class):', selectedOption.getAttribute('data-detection-class'));
-      console.log('detectionClassName final:', detectionClassName);
-      document.getElementById('animalType').value = detectionClassName;
+      // Pré-preencher o tipo de animal com a classe da câmera (ou do upload)
+      document.getElementById('animalType').value = selectedClassName;
       
       countingInfoModal.show();
     });
@@ -449,6 +461,58 @@
         
       } catch (error) {
         alert('Erro ao parar: ' + error.message);
+      }
+    });
+  }
+
+  // Upload de vídeo: vira uma "câmera" oculta e segue o mesmo fluxo (linha -> contagem)
+  const videoFile = document.getElementById('videoFile');
+  const uploadClass = document.getElementById('uploadClass');
+  const btnUpload = document.getElementById('btnUpload');
+  const uploadStatus = document.getElementById('uploadStatus');
+
+  if (videoFile && btnUpload) {
+    videoFile.addEventListener('change', () => {
+      btnUpload.disabled = !videoFile.files.length;
+    });
+
+    btnUpload.addEventListener('click', async () => {
+      const file = videoFile.files[0];
+      if (!file) return;
+      const URLS = window.VIDEO_AO_VIVO_URLS || {};
+      const form = new FormData();
+      form.append('video', file);
+      form.append('detection_class', uploadClass.value);
+
+      btnUpload.disabled = true;
+      uploadStatus.textContent = 'Enviando vídeo...';
+      try {
+        const response = await fetch(URLS.upload, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
+          body: form
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro no upload');
+
+        selectedCamera = data.camera_id;
+        selectedName = data.camera_name;
+        selectedClassName = data.detection_class_name;
+        uploadStatus.textContent = '';
+        videoFile.value = '';
+
+        // Prévia local do arquivo para posicionar a linha
+        if (cameraSelection) cameraSelection.style.display = 'none';
+        if (lineSetup) lineSetup.style.display = 'block';
+        const cameraNameEl = document.getElementById('cameraName');
+        if (cameraNameEl) cameraNameEl.textContent = selectedName;
+        snapshotImage.style.display = 'none';
+        snapshotVideo.style.display = 'block';
+        snapshotVideo.src = URL.createObjectURL(file);
+        snapshotVideo.onloadeddata = () => snapshotVideo.pause();
+      } catch (error) {
+        uploadStatus.textContent = 'Erro: ' + error.message;
+        btnUpload.disabled = false;
       }
     });
   }

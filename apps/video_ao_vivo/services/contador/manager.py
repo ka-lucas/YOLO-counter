@@ -51,7 +51,9 @@ class CounterManager:
             # Usar URL da câmera
             video_source = camera.primary_url
             
-            self.processor = VideoCounterProcessor(video_source, config, camera)
+            # vídeo enviado conta uma vez só; câmera/arquivo de demo recomeça
+            loop = camera.location != camera.UPLOAD_LOCATION
+            self.processor = VideoCounterProcessor(video_source, config, camera, loop=loop)
             self.processor.start()
     
     def _get_model_path_for_camera(self, camera):
@@ -112,8 +114,11 @@ class CounterManager:
             return False
 
     def pause(self):
+        """Retorna a posição exata (quadro/tempo/contagem) onde a contagem parou."""
         with self.lock:
-            if self.processor: self.processor.pause()
+            processor = self.processor
+        # espera fora do lock para não travar o stream enquanto o loop confirma
+        return processor.pause() if processor else None
 
     #def add_event(self, kind: str, delta: int, track_id: int | None = None):]
     def add_event(self, kind: str, delta: int, track_id: Optional[int] = None):
@@ -224,11 +229,16 @@ class CounterManager:
             if not self.processor:
                 return {"running": False, "paused": False, "in": 0, "out": 0}
 
+            p = self.processor
             return {
-                "running": self.processor.is_running,
-                "paused": self.processor.is_paused,
-                "in": int(self.processor.counts.get("in", 0)),
-                "out": int(self.processor.counts.get("out", 0)),
+                "running": p.is_running,
+                "paused": p.is_paused,
+                "finished": p.finished,
+                "in": int(p.counts.get("in", 0)),
+                "out": int(p.counts.get("out", 0)),
+                "position": p.position(),
+                "total_frames": p.total_frames,
+                "paused_at": p.paused_at,
             }
 
 
@@ -240,8 +250,10 @@ class CounterManager:
                 self.processor.set_line_y_norm(self._saved_line_y_norm)
 
     def get_latest_jpeg(self):
+        """(seq, jpeg) do último quadro; seq muda só quando há quadro novo."""
         with self.lock:
-            return self.processor.latest_jpeg if self.processor else None
+            p = self.processor
+            return (p.jpeg_seq, p.latest_jpeg) if p else (0, None)
     
     def _log_event(self, event):
         """Salva evento no arquivo de log"""

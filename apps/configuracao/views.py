@@ -34,7 +34,7 @@ def can_edit_model(user, model):
 @login_required
 def index(request):
     """Página de configurações com lista de câmeras integrada"""
-    cameras = Camera.objects.filter(user=request.user).order_by("-created_at")
+    cameras = Camera.objects.filter(user=request.user).exclude(location=Camera.UPLOAD_LOCATION).order_by("-created_at")
     
     # Modelos do próprio usuário + modelos públicos
     user_models = ModelConfiguration.objects.filter(uploaded_by=request.user).order_by('-uploaded_at')

@@ -7,6 +7,9 @@ from django.utils import timezone
 from pathlib import Path
 from django.contrib.staticfiles import finders
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
+
+UPLOAD_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
 
 
 def live_page(request):
@@ -19,7 +22,64 @@ def live_page(request):
         .values_list('detection_class_name', flat=True)
         .distinct()
     )
-    return render(request, "video_ao_vivo/index.html", {"cameras": cameras, "animal_types": animal_types})
+    return render(request, "video_ao_vivo/index.html", {
+        "cameras": cameras,
+        "animal_types": animal_types,
+        "yolo_classes": Camera.YOLO_CLASSES,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_upload(request):
+    """Recebe um vídeo e cria uma câmera oculta apontando para o arquivo, para contar como qualquer fonte."""
+    import uuid
+    import cv2
+    from apps.cameras.models import Camera
+
+    video = request.FILES.get("video")
+    if not video:
+        return JsonResponse({"ok": False, "error": "Envie um arquivo de vídeo"}, status=400)
+
+    ext = Path(video.name).suffix.lower()
+    if ext not in UPLOAD_EXTENSIONS:
+        return JsonResponse({"ok": False, "error": f"Formato não suportado. Use: {', '.join(sorted(UPLOAD_EXTENSIONS))}"}, status=400)
+
+    try:
+        detection_class = int(request.POST.get("detection_class", 0))
+    except ValueError:
+        detection_class = -1
+    if detection_class not in dict(Camera.YOLO_CLASSES):
+        return JsonResponse({"ok": False, "error": "Classe de detecção inválida"}, status=400)
+
+    upload_dir = Path(settings.MEDIA_ROOT) / "uploads" / str(request.user.id)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    dest = upload_dir / f"{uuid.uuid4().hex}{ext}"  # nome do usuário não entra no caminho
+    with open(dest, "wb") as f:
+        for chunk in video.chunks():
+            f.write(chunk)
+
+    cap = cv2.VideoCapture(str(dest))
+    readable = cap.isOpened() and cap.read()[0]
+    cap.release()
+    if not readable:
+        dest.unlink(missing_ok=True)
+        return JsonResponse({"ok": False, "error": "Não foi possível ler o vídeo"}, status=400)
+
+    camera = Camera.objects.create(
+        user=request.user,
+        name=f"Upload: {Path(video.name).name}"[:100],
+        rtsp_url=str(dest),
+        location=Camera.UPLOAD_LOCATION,
+        detection_class=detection_class,
+        is_active=False,
+    )
+    return JsonResponse({
+        "ok": True,
+        "camera_id": camera.id,
+        "camera_name": camera.name,
+        "detection_class_name": camera.detection_class_name,
+    })
 
 
 @csrf_exempt
@@ -31,8 +91,11 @@ def api_start(request):
         return JsonResponse({"ok": False, "error": "camera_id é obrigatório"}, status=400)
     
     try:
+        from django.db.models import Q
         from apps.cameras.models import Camera
-        camera = Camera.objects.get(id=camera_id, is_active=True, user=request.user)
+        camera = Camera.objects.get(
+            Q(is_active=True) | Q(location=Camera.UPLOAD_LOCATION), id=camera_id, user=request.user
+        )
     except Camera.DoesNotExist:
         return JsonResponse({"ok": False, "error": "Câmera não encontrada"}, status=404)
     
@@ -77,8 +140,8 @@ def api_start(request):
 def api_pause(request):
     try:
         from .services.contador.manager import counter_manager
-        counter_manager.pause()
-        return JsonResponse({"ok": True, "message": "Contagem pausada"})
+        paused_at = counter_manager.pause()
+        return JsonResponse({"ok": True, "message": "Contagem pausada", "paused_at": paused_at})
     except Exception as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
@@ -145,12 +208,19 @@ def stream_mjpeg(request):
     def generate():
         from .services.contador.manager import counter_manager
         print("Stream MJPEG iniciado")
-        
+        last_seq, last_sent = -1, 0.0
+
         while True:
-            jpeg_data = counter_manager.get_latest_jpeg()
+            seq, jpeg_data = counter_manager.get_latest_jpeg()
             if jpeg_data:
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + jpeg_data + b'\r\n')
+                # Só envia quadro novo (ou um reenvio por segundo para manter a conexão).
+                # Reenviar o mesmo quadro a 30 FPS enchia o buffer e aumentava o atraso.
+                if seq != last_seq or time.time() - last_sent > 1.0:
+                    last_seq, last_sent = seq, time.time()
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg_data + b'\r\n')
+                time.sleep(0.01)
+                continue
             else:
                 # Frame vazio se não houver dados
                 import cv2
