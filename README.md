@@ -1,7 +1,6 @@
 # Yolo Counter OS
 
 Aplicacao Django para contagem inteligente em video, com gerenciamento de cameras, modelos YOLO, historico de sessoes e operacao em tempo real.
-
 ## Visao geral
 
 O projeto inclui:
