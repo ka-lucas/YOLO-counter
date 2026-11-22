@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yolo-counter"
+version = "0.1.0"
+description = "Contagem de objetos em vídeo por cruzamento de linha, com detecção YOLO e rastreamento."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Katarine Melo" }]
+requires-python = ">=3.10"
+dependencies = [
+  "ultralytics>=8.3",
+  "lap>=0.5.12",
+  "opencv-python-headless>=4.8",
+  "numpy",
+]
+
+[project.optional-dependencies]
+web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart"]
+dev = ["pytest", "httpx", "fastapi>=0.110", "python-multipart"]
+
+[project.scripts]
+yolo-counter = "yolocounter.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+yolocounter = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

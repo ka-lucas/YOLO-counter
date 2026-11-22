@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YOLO Counter</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2430; --muted:#667085; --accent:#2563eb; --line:#e4e7ec; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); background:var(--card); }
+  header h1 { margin:0; font-size:20px; } header p { margin:4px 0 0; color:var(--muted); font-size:14px; }
+  main { display:grid; grid-template-columns:340px 1fr; gap:20px; padding:20px 28px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  button { margin-top:12px; padding:9px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  button.secondary { background:#475467; }
+  .tabs button { margin:0 6px 0 0; background:#e4e7ec; color:var(--ink); } .tabs button.active { background:var(--accent); color:#fff; }
+  .hidden { display:none; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .stat { background:var(--bg); border-radius:8px; padding:10px; text-align:center; }
+  .stat b { display:block; font-size:26px; } .stat span { font-size:12px; color:var(--muted); }
+  #video { width:100%; border-radius:8px; background:#111; min-height:240px; }
+  #status { font-size:13px; color:var(--muted); margin-top:8px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:12px; }
+  td, th { border-bottom:1px solid var(--line); padding:6px; text-align:left; }
+  @media (max-width: 860px) { main { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header><h1>YOLO Counter</h1><p>Contagem de objetos que cruzam uma linha, com detecção YOLO e rastreamento.</p></header>
+<main>
+  <section class="card">
+    <h2>Nova contagem</h2>
+    <div class="tabs"><button id="tab-file" class="active" type="button">Arquivo</button><button id="tab-url" type="button">Câmera / URL</button></div>
+    <form id="form">
+      <div id="file-field"><label>Vídeo (mp4, avi, mov, mkv, webm)</label><input type="file" name="file" accept="video/*"></div>
+      <div id="url-field" class="hidden"><label>URL RTSP/HTTP ou índice da webcam</label><input name="source" placeholder="rtsp://usuario:senha@host:554/stream"></div>
+      <label>Linha "x1,y1,x2,y2" em pixels (vazio = horizontal no meio)</label><input name="line" placeholder="0,360,1280,360">
+      <label>Classes, separadas por vírgula (vazio = todas)</label><input name="classes" placeholder="person, car">
+      <label>Confiança mínima</label><input name="conf" type="number" step="0.05" min="0.05" max="0.95" value="0.35">
+      <button type="submit">Iniciar</button> <button type="button" class="secondary" id="stop">Parar</button>
+    </form>
+    <div id="status">Nenhuma contagem.</div>
+  </section>
+  <section class="card">
+    <div class="stats">
+      <div class="stat"><b id="in">0</b><span>Entradas</span></div>
+      <div class="stat"><b id="out">0</b><span>Saídas</span></div>
+      <div class="stat"><b id="total">0</b><span>Total</span></div>
+    </div>
+    <img id="video" alt="Vídeo anotado">
+    <table><thead><tr><th>Quadro</th><th>Tempo (s)</th><th>Objeto</th><th>Classe</th><th>Sentido</th></tr></thead><tbody id="events"></tbody></table>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let mode = "file", timer = null;
+function setMode(m) {
+  mode = m;
+  $("tab-file").classList.toggle("active", m === "file"); $("tab-url").classList.toggle("active", m === "url");
+  $("file-field").classList.toggle("hidden", m !== "file"); $("url-field").classList.toggle("hidden", m !== "url");
+}
+$("tab-file").onclick = () => setMode("file"); $("tab-url").onclick = () => setMode("url");
+
+$("form").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const data = new FormData(ev.target);
+  if (mode === "file") data.delete("source"); else data.delete("file");
+  for (const k of ["line", "classes"]) if (!data.get(k)) data.delete(k);
+  const res = await fetch(mode === "file" ? "/api/jobs/upload" : "/api/jobs/stream", { method: "POST", body: data });
+  const body = await res.json();
+  if (!res.ok) { $("status").textContent = "Erro: " + (body.detail || res.statusText); return; }
+  $("video").src = "/api/jobs/current/video?t=" + Date.now();
+  poll();
+};
+$("stop").onclick = () => fetch("/api/jobs/current/stop", { method: "POST" });
+
+async function poll() {
+  clearTimeout(timer);
+  const s = await (await fetch("/api/jobs/current")).json();
+  if (s.status !== "idle") {
+    $("in").textContent = s.totals.in; $("out").textContent = s.totals.out; $("total").textContent = s.totals.total;
+    $("status").textContent = `Status: ${s.status} · quadro ${s.frame} · ${s.elapsed_s}s` + (s.error ? ` · ${s.error}` : "");
+    $("events").innerHTML = s.events.slice(-15).reverse().map(e =>
+      `<tr><td>${e.frame}</td><td>${e.timestamp_s == null ? "-" : e.timestamp_s.toFixed(1)}</td><td>#${e.track_id}</td><td>${e.label}</td><td>${e.direction === "in" ? "entrada" : "saída"}</td></tr>`).join("");
+  }
+  if (["starting", "running"].includes(s.status)) timer = setTimeout(poll, 500);
+}
+poll();
+</script>
+</body>
+</html>

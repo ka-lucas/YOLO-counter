@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+# pesos e vídeos ficam fora do repositório
+*.pt
+*.mp4
+*.avi
+*.mov
+*.mkv
+runs/
